@@ -1,0 +1,28 @@
+MOLECULE STUDIO FOR macOS
+
+Choose AppleSilicon for an M-series Mac, or Intel for an Intel Mac.
+This initial build targets macOS 15 (Sequoia) and newer.
+
+Open the DMG and drag Molecule Studio into the Applications shortcut.
+Eject the disk image, then open Molecule Studio from Applications.
+Alternatively, double-click the ZIP and drag Molecule Studio.app into
+Applications. Keep the app bundle intact.
+
+Python, npm, Node.js, a browser, and a localhost server are not required.
+The editors, chemistry engine, and renderer are bundled and work offline.
+Open files inside Studio or drag them onto its window.
+
+INITIAL TEST BUILDS: these apps have an ad-hoc signature, not an Apple
+Developer ID signature or notarization. macOS may block the first launch.
+For a copy you trust, try opening it, then use System Settings > Privacy &
+Security > Open Anyway and confirm. Managed Macs may not allow this exception.
+Do not disable Gatekeeper or remove quarantine system-wide.
+https://support.apple.com/en-us/102445
+
+To uninstall, quit Studio and move Molecule Studio.app to Trash.
+Your calculation files are not part of the app and are left in place.
+
+Startup diagnostics: ~/Library/Logs/Molecule Studio/studio.log
+Build information and dependency notices: right-click the app, choose
+Show Package Contents, then Contents/Resources/ReleaseNotes.
+Editor notices are in Contents/Resources/molecule_studio/assets/*-LICENSE*.txt.

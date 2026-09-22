@@ -1,16 +1,15 @@
 """Build and smoke-check a Windows x64 bundle, then make the installer and ZIP."""
 import hashlib
-from importlib.metadata import distributions
 import json
 import os
 from pathlib import Path
-import platform
 import shutil
 import subprocess
 import sys
 import sysconfig
 import tempfile
 import tomllib
+from release_files import write_notices
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -26,25 +25,7 @@ def main():
                     str(ROOT / 'packaging' / 'MoleculeStudio.spec')], cwd=ROOT, check=True)
     bundle = ROOT / 'dist' / 'MoleculeStudio'
     shutil.copy2(ROOT / 'packaging' / 'START-HERE.txt', bundle)
-    licenses = bundle / 'ThirdPartyLicenses'
-    licenses.mkdir(exist_ok=True)
-    # Retain distribution notices, including nested .dist-info/licenses trees.
-    for dist in distributions():
-        for file in dist.files or []:
-            if '.dist-info/' not in file.as_posix():
-                continue
-            if file.name != 'METADATA' and not any(word in file.as_posix().lower() for word in ('license', 'copying', 'notice', 'author')):
-                continue
-            source = Path(dist.locate_file(file))
-            if source.is_file():
-                target = licenses / file
-                target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(source, target)
-    python_license = Path(sys.base_prefix) / 'LICENSE.txt'
-    if python_license.is_file():
-        shutil.copy2(python_license, licenses / 'Python-LICENSE.txt')
-    freeze = '\n'.join(sorted(f"{dist.metadata['Name']}=={dist.version}" for dist in distributions()))
-    (bundle / 'build-info.txt').write_text(f'Molecule Studio {version}\nPython {sys.version}\n{platform.platform()}\n\n{freeze}', encoding='utf-8')
+    write_notices(bundle, version)
 
     report = ROOT / 'build' / 'portable-smoke.json'
     # Strip Python/developer paths and run away from the checkout. The bundle

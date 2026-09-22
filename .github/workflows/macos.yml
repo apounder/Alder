@@ -1,0 +1,70 @@
+name: macOS download
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    name: macOS ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            architecture: arm64
+            label: AppleSilicon
+          - runner: macos-15-intel
+            architecture: x64
+            label: Intel
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    env:
+      PYTHONUTF8: '1'
+      # Use Qt's native macOS graphics backend. Qt does not bundle SwiftShader.
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+          architecture: ${{ matrix.architecture }}
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            packaging/macos-requirements.txt
+      - name: Install build dependencies
+        run: python -m pip install -r packaging/macos-requirements.txt ".[dev]"
+      - name: Check parsers and native chemistry
+        run: python -m pytest -q
+      - name: Check desktop fragment insertion
+        run: python tests/fragments_smoke.py
+      - name: Build app, DMG, ZIP, and check the installed copy
+        run: python scripts/build_macos.py
+      - name: Upload Mac downloads
+        uses: actions/upload-artifact@v7
+        with:
+          name: MoleculeStudio-macOS-${{ matrix.label }}
+          path: dist/release/*
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: macOS-${{ matrix.label }}-diagnostics
+          path: |
+            build/*-smoke.json
+            build/macos-notices/build-info.txt
+            build/MoleculeStudio/warn-*.txt
+            ~/Library/Logs/Molecule Studio/*.log
+            ~/Library/Logs/DiagnosticReports/MoleculeStudio*
+          if-no-files-found: ignore

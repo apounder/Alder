@@ -9,7 +9,9 @@ description = "Offline desktop molecular viewer and editor for Gaussian, ORCA, s
 requires-python = ">=3.11"
 dependencies = [
     "cclib @ git+https://github.com/cclib/cclib.git@f90be37ffa1ab4cfec97495bdd01d670ca329f17",
-    "numpy>=2", "PySide6>=6.8,<7", "matplotlib>=3.9", "Pillow>=11", "rdkit==2026.3.6",
+    "numpy>=2", "PySide6>=6.8,<7", "matplotlib>=3.9", "Pillow>=11",
+    "rdkit==2025.3.6; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "rdkit==2026.3.6; sys_platform != 'darwin' or platform_machine != 'x86_64'",
 ]
 
 [project.optional-dependencies]

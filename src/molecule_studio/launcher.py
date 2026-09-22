@@ -1,4 +1,4 @@
-"""Desktop entry point, including diagnostics for the console-free Windows app."""
+"""Desktop entry point, including diagnostics for packaged desktop apps."""
 from datetime import datetime
 import multiprocessing
 import os
@@ -16,12 +16,15 @@ def main():
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('MoleculeStudio.Desktop')
         if sys.stderr is None:
             log_path = Path(os.environ.get('LOCALAPPDATA', Path.home())) / 'Molecule Studio' / 'studio.log'
-            log_path.parent.mkdir(parents=True, exist_ok=True)
-            if log_path.exists() and log_path.stat().st_size > 2_000_000:
-                log_path.replace(log_path.with_suffix('.previous.log'))
-            sys.stderr = log_path.open('a', encoding='utf-8', buffering=1)
-            sys.stdout = sys.stderr
-            print(f'\nMolecule Studio started {datetime.now().isoformat()}', file=sys.stderr)
+    elif sys.platform == 'darwin' and getattr(sys, 'frozen', False):
+        log_path = Path.home() / 'Library' / 'Logs' / 'Molecule Studio' / 'studio.log'
+    if log_path is not None:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        if log_path.exists() and log_path.stat().st_size > 2_000_000:
+            log_path.replace(log_path.with_suffix('.previous.log'))
+        sys.stderr = log_path.open('a', encoding='utf-8', buffering=1)
+        sys.stdout = sys.stderr
+        print(f'\nMolecule Studio started {datetime.now().isoformat()}', file=sys.stderr)
     try:
         if smoke:
             from .smoke import run

@@ -1,11 +1,8 @@
 # Windows releases
 
-Status (2026-09-21): the x64 executable, installer, and portable ZIP were built
-on a Windows 11 ARM64 PC using x64 emulation. All 16 Python tests and seven
-packaged-app checks passed; the installed copy passed those same checks, and
-uninstall removed the app and Start-menu shortcut. The GitHub workflow is
-prepared but has not run yet. Native Intel/AMD Windows and Windows 10 still
-need independent checks.
+Windows releases include an x64 installer and a portable ZIP. The build
+workflow checks the application, installation, and uninstall behavior before
+uploading the downloads.
 
 Local downloads are in `dist/release`. To publish the already-built files,
 attach the installer, ZIP, and checksums to a GitHub Release after publishing
@@ -41,13 +38,10 @@ The workflow also builds version tags and pull requests. It does not publish
 releases automatically and does not require repository write permissions.
 Increase `project.version` in `pyproject.toml` for the next release.
 
-For this workstation, the source is already prepared at
-`C:\Users\austi\Documents\GitHub\molecule-studio` as a local Git repository.
-In GitHub Desktop, choose **File → Add local repository**, select that folder,
-review and commit the files to `main`, then choose **Publish repository**.
-Build tools and generated downloads are ignored. Nothing has been committed
-or published automatically. Attach downloads to Releases instead of committing
-them to the source repository.
+In GitHub Desktop, open the repository, commit the changes, and choose
+**Push origin**. For a new repository, choose **Publish repository** after the
+first commit. Attach generated downloads to Releases; build tools and build
+output are excluded from source control.
 
 ## What the download contains
 
