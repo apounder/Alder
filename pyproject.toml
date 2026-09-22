@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "molecule-studio"
+version = "0.2.0"
+description = "Offline desktop molecular viewer and editor for Gaussian, ORCA, structures, and cube fields"
+requires-python = ">=3.11"
+dependencies = [
+    "cclib @ git+https://github.com/cclib/cclib.git@f90be37ffa1ab4cfec97495bdd01d670ca329f17",
+    "numpy>=2", "PySide6>=6.8,<7", "matplotlib>=3.9", "Pillow>=11", "rdkit==2026.3.6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.gui-scripts]
+molecule-studio = "molecule_studio.launcher:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+molecule_studio = ["assets/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

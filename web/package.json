@@ -1,0 +1,32 @@
+{
+  "name": "molstudio-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node tests/core.test.js",
+    "test:browser": "node tests/browser.mjs",
+    "package:portable": "node scripts/package-portable.mjs",
+    "package:studio": "node scripts/package-studio.mjs",
+    "package:sketch": "node scripts/package-sketch.mjs",
+    "test:portable": "node tests/portable.mjs"
+  },
+  "dependencies": {
+    "buffer": "6.0.3",
+    "events": "3.3.0",
+    "ketcher-core": "3.18.0",
+    "ketcher-react": "3.18.0",
+    "ketcher-standalone": "3.18.0",
+    "lz-string": "1.5.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "three": "0.180.0"
+  },
+  "devDependencies": {
+    "playwright": "1.55.1",
+    "vite": "^7.3.6"
+  }
+}

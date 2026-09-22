@@ -1,0 +1,81 @@
+name: Windows download
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    # SwiftShader is only for the CI virtual display. It is not forced on users.
+    env:
+      PYTHONUTF8: '1'
+      QTWEBENGINE_CHROMIUM_FLAGS: --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+          architecture: x64
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            packaging/windows-requirements.txt
+      - name: Install build dependencies
+        run: python -m pip install -r packaging/windows-requirements.txt ".[dev]"
+      - name: Check parsers and native chemistry
+        run: python -m pytest -q
+      - name: Build and check standalone application
+        run: python scripts/build_windows.py
+      - name: Check installer, installed application, and uninstall
+        run: |
+          $setup = (Get-ChildItem dist/release/*-Setup.exe).FullName
+          $installDir = Join-Path $env:RUNNER_TEMP 'Molecule Studio installé'
+          $install = Start-Process $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$installDir`"", "/LOG=`"$env:GITHUB_WORKSPACE\build\installer.log`"" -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw "Installer failed: $($install.ExitCode)" }
+          $shortcut = Join-Path ([Environment]::GetFolderPath('Programs')) 'Molecule Studio/Molecule Studio.lnk'
+          if (-not (Test-Path $shortcut)) { throw 'Start-menu shortcut is missing' }
+          $report = Join-Path $env:GITHUB_WORKSPACE 'build/installed-smoke.json'
+          $fixtures = Join-Path $env:GITHUB_WORKSPACE 'tests/data'
+          $env:PATH = "$env:SystemRoot\System32"
+          Remove-Item Env:PYTHONPATH, Env:PYTHONHOME, Env:QT_PLUGIN_PATH -ErrorAction SilentlyContinue
+          try {
+            $app = Start-Process "$installDir\MoleculeStudio.exe" -WorkingDirectory $env:RUNNER_TEMP -ArgumentList '--smoke-test', "`"$report`"", "`"$fixtures`"" -PassThru
+            if (-not $app.WaitForExit(300000)) { $app.Kill(); throw 'Installed app timed out' }
+            if ($app.ExitCode -ne 0) { throw "Installed app failed: $($app.ExitCode)" }
+            $result = Get-Content $report -Raw | ConvertFrom-Json
+            if (-not $result.ok -or -not $result.frozen) { throw 'Installed app check failed' }
+          } finally {
+            $uninstall = Start-Process "$installDir\unins000.exe" -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait -PassThru
+            if ($uninstall.ExitCode -ne 0) { throw "Uninstall failed: $($uninstall.ExitCode)" }
+          }
+          if (Test-Path "$installDir\MoleculeStudio.exe") { throw 'Uninstall left the executable behind' }
+          if (Test-Path $shortcut) { throw 'Uninstall left the shortcut behind' }
+      - name: Upload Windows downloads
+        uses: actions/upload-artifact@v7
+        with:
+          name: MoleculeStudio-Windows-x64
+          path: dist/release/*
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: Windows-build-diagnostics
+          path: |
+            build/*-smoke.json
+            build/installer.log
+            build/MoleculeStudio/warn-*.txt
+            ~/AppData/Local/Molecule Studio/*.log
+          if-no-files-found: ignore

@@ -1,0 +1,18 @@
+.venv/
+.venv-build/
+.build-tools/
+.runtime/
+__pycache__/
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+node_modules/
+web/.studio-build/
+web/.sketch-build/
+web/.portable-build/
+web/portable/
+web/test-results/
+# Local research examples are not release fixtures.
+tests/data/job_orca.out
+tests/data/dg_inter.cub

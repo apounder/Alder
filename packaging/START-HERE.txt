@@ -1,0 +1,25 @@
+MOLECULE STUDIO FOR WINDOWS
+
+Portable ZIP: right-click the ZIP, choose Extract All, open the extracted
+MoleculeStudio folder, and double-click MoleculeStudio.exe.
+Keep the _internal folder next to the executable. Do not run from inside the ZIP.
+
+Installer: double-click MoleculeStudio-<version>-Windows-x64-Setup.exe and
+follow the installation window. Open Molecule Studio from the Start menu.
+Installation is for your Windows account and does not require administrator
+rights. Remove it through Windows Settings > Apps > Installed apps.
+
+Python, npm, Node.js, a browser, and a localhost server are not required.
+The editors, chemistry engine, and renderer are included and work offline.
+Open files from inside Studio or drag files onto its window.
+
+Target: 64-bit Windows 10 (1809+) / Windows 11 with working graphics drivers.
+Windows on ARM runs this x64 build through emulation; no native ARM64 build
+is included. The initial build was checked on a Windows 11 ARM64 PC.
+Current builds are unsigned; Windows may display an unknown-publisher warning.
+
+If startup fails, diagnostics are written to:
+%LOCALAPPDATA%\Molecule Studio\studio.log
+
+Third-party notices are included in ThirdPartyLicenses and in
+_internal\molecule_studio\assets\*-LICENSE*.txt.
