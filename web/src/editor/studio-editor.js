@@ -16,6 +16,10 @@ export class StudioEditor extends Editor {
     view.renderer.domElement.addEventListener('lostpointercapture',()=>{if(this.draw||this.area||this.rotateDrag)this.cancel();});
     view.renderer.domElement.addEventListener('pointerleave',()=>this.clearFragmentPreview());
   }
+  setTool(tool) {
+    if(!this.locked && !['select','move','rotate'].includes(tool))this.view.measurementCount=0;
+    super.setTool(tool);
+  }
   mutate(fn, hydrogens=this.autoHydrogens) {
     super.mutate(model=>{
       // Only adjust atoms touched by this edit; preserve unrelated imported geometry.
@@ -39,7 +43,7 @@ export class StudioEditor extends Editor {
     this.mutate(m=>{removeAtoms(m,ids);this.selection=[];},false);
   }
   select(i, additive=false) {
-    if(additive) {
+    if(additive && !this.view.measurementCount) {
       const k=this.selection.indexOf(i);if(k<0)this.selection.push(i);else this.selection.splice(k,1);
       this.update();
     } else {

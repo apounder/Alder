@@ -6,9 +6,12 @@ from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs, co
 
 root = Path(SPECPATH).parent
 assets = root / 'src' / 'molecule_studio' / 'assets'
+worker_source = root / 'src' / 'molecule_studio' / 'mlip'
+worker_data = [(str(p), 'molecule_studio/mlip/' + str(p.parent.relative_to(worker_source)))
+               for p in worker_source.rglob('*') if p.is_file() and p.suffix in {'.py', '.json'}]
 datas, binaries = collect_delvewheel_libs_directory(
     'rdkit',
-    datas=[(str(assets), 'molecule_studio/assets')] + collect_data_files('rdkit', includes=['Data/**']),
+    datas=[(str(assets), 'molecule_studio/assets')] + worker_data + collect_data_files('rdkit', includes=['Data/**']),
     binaries=collect_dynamic_libs('rdkit'),
 )
 macos = sys.platform == 'darwin'
@@ -23,7 +26,7 @@ a = Analysis(
     hiddenimports=[],
     hookspath=[],
     hooksconfig={'matplotlib': {'backends': ['QtAgg']}},
-    excludes=['tkinter', 'PyQt5', 'PyQt6', 'PySide2', 'IPython', 'pytest'],
+    excludes=['tkinter', 'PyQt5', 'PyQt6', 'PySide2', 'IPython', 'pytest', 'torch', 'fairchem', 'mace', 'aimnet', 'sella', 'jax'],
     noarchive=False,
 )
 pyz = PYZ(a.pure)

@@ -50,6 +50,16 @@ export class StudioView extends MolecularView {
     this.observer = new ResizeObserver(this.resize);this.observer.observe(host);
     this.setAppearance(this.appearance);
   }
+  setMeasurementCount(count) {
+    this.measurementCount=[2,3,4].includes(count)?count:0;
+    this.updateOverlays([],null);
+  }
+  reportMeasurement(measurement,text,ids) {
+    const state=JSON.stringify({count:this.measurementCount||0,
+      indices:ids.slice(), atoms:ids.map(i=>`${this.model.atoms[i].el}${i+1}`),
+      kind:measurement?.kind||'',text});
+    if(state!==this.lastMeasurementState){this.lastMeasurementState=state;this.onMeasurementChange?.(state);}
+  }
   updateControls(delta) {
     if(this.controls.autoRotate) {
       const axis=this.camera.up.clone().normalize(),q=new THREE.Quaternion().setFromAxisAngle(axis,delta*0.08);

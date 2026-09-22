@@ -3,7 +3,7 @@ from pathlib import Path
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PySide6.QtCore import Qt, QUrl
-from PySide6.QtGui import QAction, QIcon, QKeySequence
+from PySide6.QtGui import QAction, QColor, QIcon, QKeySequence, QPalette
 from PySide6.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFormLayout, QFrame,
     QHBoxLayout, QHeaderView, QLabel, QPushButton, QScrollArea, QSlider,
@@ -82,6 +82,10 @@ def build_ui(self, assets, bridge_class, units):
     self.setup_button = QPushButton('Calculation setup')
     self.setup_button.clicked.connect(lambda: open_setup(self))
     bar.addWidget(self.setup_button)
+    from .mlip_ui import open_mlip
+    self.mlip_button = QPushButton('Local MLIP')
+    self.mlip_button.clicked.connect(lambda: open_mlip(self))
+    bar.addWidget(self.mlip_button)
     self.export_button = QPushButton("Export figure")
     self.export_button.setObjectName("primary")
     self.export_button.clicked.connect(self.export_image)
@@ -338,7 +342,31 @@ def build_ui(self, assets, bridge_class, units):
     self.fit_button = fit
     fit.clicked.connect(lambda: self.send(type="fit"))
     viewbar.addWidget(fit)
+    self.measure_button = QPushButton("Measure")
+    self.measure_button.setCheckable(True)
+    self.measure_button.setToolTip("Measure a bond length, angle, or dihedral by clicking atoms in order. Escape clears the picks.")
+    self.measure_button.clicked.connect(self.choose_measurement)
+    viewbar.insertWidget(viewbar.count()-1, self.measure_button)
     top_layout.addLayout(viewbar)
+    self.measurement_panel = QWidget()
+    measurement_row = QHBoxLayout(self.measurement_panel)
+    measurement_row.setContentsMargins(18, 4, 18, 10)
+    self.measurement_kind = QComboBox()
+    for title, count in (("Bond length · 2 atoms", 2), ("Angle · 3 atoms", 3), ("Dihedral · 4 atoms", 4)):
+        self.measurement_kind.addItem(title, count)
+    self.measurement_kind.setAccessibleName("Measurement type")
+    self.measurement_kind.setToolTip("Bond length measures any two atoms. For an angle, pick the vertex second. For a dihedral, pick four atoms along the torsion.")
+    self.measurement_kind.currentIndexChanged.connect(lambda: self.choose_measurement(True))
+    measurement_row.addWidget(self.measurement_kind)
+    self.measurement_readout = label("Pick 2 atoms in order (0/2).", "small")
+    self.measurement_readout.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+    measurement_row.addWidget(self.measurement_readout, 1)
+    self.measurement_clear = QPushButton("Clear")
+    self.measurement_clear.setAccessibleName("Clear measurement")
+    self.measurement_clear.clicked.connect(lambda: self.choose_measurement(True))
+    measurement_row.addWidget(self.measurement_clear)
+    self.measurement_panel.hide()
+    top_layout.addWidget(self.measurement_panel)
     self.web = QWebEngineView()
     self.web.setMinimumHeight(280)
     self.web.setAcceptDrops(True)
@@ -456,9 +484,25 @@ def configure_app(app):
     app.setApplicationName("Molecule Studio")
     app.setWindowIcon(QIcon(str(Path(__file__).parent / 'assets' / 'studio.ico')))
     app.setStyle("Fusion")
+    # Fusion's standard palette can still follow the OS dark theme. Set every
+    # native control surface explicitly, including editor viewports and checks.
+    palette = QPalette()
+    for role, color in {
+        'Window':'#f5f7f5', 'WindowText':'#26382d', 'Base':'#f7f8f7',
+        'AlternateBase':'#edf1ed', 'Text':'#26382d', 'Button':'#f7f8f7',
+        'ButtonText':'#26382d', 'Highlight':'#dceee1', 'HighlightedText':'#173b25',
+        'PlaceholderText':'#64726a', 'ToolTipBase':'#fffef5', 'ToolTipText':'#26382d',
+        'Light':'#ffffff', 'Midlight':'#edf1ed', 'Mid':'#a6b4aa',
+        'Dark':'#64726a', 'Shadow':'#26382d', 'Link':'#14793b', 'LinkVisited':'#385c45',
+    }.items():
+        palette.setColor(getattr(QPalette.ColorRole, role), QColor(color))
+    for role in ('Text', 'WindowText', 'ButtonText'):
+        palette.setColor(QPalette.ColorGroup.Disabled, getattr(QPalette.ColorRole, role), QColor('#64726a'))
+    palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Base, QColor('#edf1ed'))
+    app.setPalette(palette)
     app.setStyleSheet("""
         QWidget { color:#26382d; font-size:13px; }
-        QMainWindow, QWidget#workspace { background:#f5f7f5; }
+        QMainWindow, QDialog, QWidget#workspace { background:#f5f7f5; }
         QWidget#appHeader { background:white; border-bottom:1px solid #dfe6df; }
         QLabel { background:transparent; }
         QLabel#brand { font-size:20px; font-weight:600; }
@@ -488,12 +532,29 @@ def configure_app(app):
         QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus { border-color:#189143; }
         QComboBox::drop-down { width:20px; border:0; }
         QComboBox::down-arrow { image:url("STUDIO_ASSETS/chevron-down.svg"); width:12px; height:12px; }
-        QComboBox QAbstractItemView { background:white; selection-background-color:#e6f4e9; selection-color:#173b25; }
-        QCheckBox { spacing:8px; }
+        QComboBox QAbstractItemView { background:#f7f8f7; color:#26382d; border:1px solid #d8e1d9; selection-background-color:#e6f4e9; selection-color:#173b25; outline:0; }
+        QComboBox QAbstractItemView::item { background:#f7f8f7; color:#26382d; }
+        QComboBox QAbstractItemView::item:selected { background:#e6f4e9; color:#173b25; }
+        QComboBox QAbstractItemView::item:disabled { color:#758178; }
+        QMenu { background:#f7f8f7; color:#26382d; border:1px solid #d8e1d9; padding:4px; }
+        QMenu::item:selected { background:#e6f4e9; color:#173b25; }
+        QMenu::item:disabled { color:#758178; }
+        QMenu::separator { height:1px; background:#d8e1d9; margin:4px 8px; }
+        QCheckBox, QRadioButton { spacing:8px; color:#26382d; background:transparent; }
+        QCheckBox:disabled, QRadioButton:disabled { color:#64726a; }
+        QCheckBox::indicator { width:16px; height:16px; border:1px solid #8b9d90; border-radius:3px; background:#f7f8f7; }
+        QCheckBox::indicator:hover { border-color:#14793b; background:#eaf4ed; }
+        QCheckBox::indicator:focus { border:2px solid #14793b; }
+        QCheckBox::indicator:checked { background:#14793b; border-color:#14793b; image:url("STUDIO_ASSETS/checkmark.svg"); }
+        QCheckBox::indicator:indeterminate { background:#14793b; border-color:#14793b; image:url("STUDIO_ASSETS/check-partial.svg"); }
+        QCheckBox::indicator:disabled { background:#edf1ed; border-color:#bac6bd; }
+        QCheckBox::indicator:checked:disabled, QCheckBox::indicator:indeterminate:disabled { background:#738a79; border-color:#738a79; }
         QTabBar::tab { padding:12px 14px; color:#758178; background:transparent; border-bottom:2px solid transparent; }
         QTabBar::tab:selected { color:#14793b; border-bottom:2px solid #189143; }
         QTabWidget#inspector QTabBar::tab { padding:12px 6px; font-size:12px; }
-        QLineEdit { background:white; border:1px solid #d8e1d9; border-radius:5px; padding:8px; }
+        QLineEdit, QPlainTextEdit, QTextEdit { background:#f7f8f7; color:#26382d; border:1px solid #d8e1d9; border-radius:5px; padding:8px; selection-background-color:#dceee1; selection-color:#173b25; }
+        QLineEdit:focus, QPlainTextEdit:focus, QTextEdit:focus { border-color:#189143; }
+        QLineEdit:disabled, QPlainTextEdit:disabled, QTextEdit:disabled, QAbstractSpinBox:disabled, QComboBox:disabled { background:#edf1ed; color:#64726a; }
         QTabBar::tab:hover { color:#14793b; background:#edf4ed; }
         QTableWidget { background:white; gridline-color:#edf1ed; border:0; selection-background-color:#e3f2e6; selection-color:#173b25; }
         QHeaderView::section { background:#f5f8f5; padding:9px; border:0; color:#65756a; }

@@ -1,0 +1,38 @@
+{
+  "ok": true,
+  "frozen": true,
+  "checks": [
+    "Native MLIP setup, all job types, and packaged external worker sources",
+    "Light native calculation fields and read-only setup log",
+    "One-click fresh AIMNet2 setup: bundled offline Python/packages/weights and real readiness check",
+    "Repeated automatic setup reuses the installed environment and cached checkpoint",
+    "External environment probe and real AIMNet2 checkpoint/device check",
+    "Queue after desktop restart automatically checks the cached model and submits the captured input",
+    "Queued optimization \u2192 frequency child, Hartree result adapter, unavailable intensities, normal modes",
+    "Responsive desktop cancellation, persisted exact MD checkpoint, bounded trajectory page",
+    "History and interrupted-job recovery after desktop restart"
+  ],
+  "packaged_viewer": {
+    "ok": true,
+    "frozen": true,
+    "platform": "Windows-11-10.0.26200-SP0",
+    "checks": [
+      "Qt WebEngine, WebChannel, SVG preview, and both local 3D views",
+      "Calculation import: gaussian-freq.log",
+      "Calculation import: orca6-opt.out",
+      "Calculation import: gaussian-td.log",
+      "Calculation import: orca6-adc2.out",
+      "Calculation import: gaussian-scan2d.log",
+      "ASE/Sella binary trajectory, saved energies, speed, Gaussian/ORCA input generation",
+      "Multi-document overlay, solid colors, rigid alignment and RMSD",
+      "Single-frame and multi-frame XYZ viewing",
+      "Bundled JavaScript RDKit/WASM SMILES to 3D, offline",
+      "Bundled Ketcher/Indigo 2D drawing, offline",
+      "Native RDKit ETKDG/MMFF 2D to 3D conversion",
+      "Figure bond edits, shared fog and extended element colors",
+      "MOL and transparent PNG figure export",
+      "Offline path-traced builder figure with fog and embedded BVH worker",
+      "Offline path-traced normal-mode WebM with bundled video encoder"
+    ]
+  }
+}

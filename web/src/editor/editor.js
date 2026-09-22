@@ -143,7 +143,7 @@ export class Editor {
     const k = this.selection.indexOf(i);
     if (k >= 0) this.selection.splice(k, 1);
     else {
-      if (this.selection.length === 4) this.selection = [];
+      if (this.selection.length >= (this.view.measurementCount || 4)) this.selection = [];
       this.selection.push(i);
     }
     this.update();

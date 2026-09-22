@@ -1,7 +1,7 @@
 # Molecule Studio
 
 An offline desktop application for viewing computational chemistry results,
-building molecules, and exporting figures. Calculation files and structures
+building molecules, running local MLIP calculations, and exporting figures. Calculation files and structures
 are processed locally.
 
 ## Features
@@ -13,6 +13,10 @@ are processed locally.
 - Multiple loaded calculations, structure overlays, rigid alignment, RMSD,
   explicit atom correspondence, individual structure colors, and adjustable playback speed.
 - Gaussian/ORCA input setup with live preview and local input-file export.
+- Local UMA, MACE and AIMNet2 calculations: energies/forces, optimization and
+  constraints, frequencies, scans, TS/IRC, NEB, MD and conformer sampling, with
+  managed environments, a persistent queue and saved partial results. See the
+  [setup guide](docs/MLIP.md) and [tested compatibility](docs/MLIP_ACCEPTANCE.md).
 - ASE/Sella `.traj`, extended XYZ, and geomeTRIC optimization XYZ trajectories,
   including saved energies and maximum forces when available.
 - UV–Vis transition tables, Gaussian/Lorentzian broadening, wavelength/energy
@@ -32,12 +36,22 @@ are processed locally.
 ## Installation
 
 Download a platform-specific package from **Releases** when available.
-Standalone packages include their dependencies and require no Python, npm,
-or local server. GitHub's **Source code** archives require a source installation.
+Standalone packages require no system Python, npm or local server. Windows has
+two editions with the same viewer/editor and calculation interface:
+
+| Windows download | Contents |
+| --- | --- |
+| **GUI** | Smaller download. Viewing, editing and exports work offline. MLIP runtimes and models download through the app when requested. |
+| **MLIP Offline** | Includes CPU environments for MACE, AIMNet2 and UMA, plus MACE-ANI-CC and four public AIMNet2 checkpoints. Setup installs the selected environment locally without internet. |
+
+Both editions configure Python and cache paths automatically. UMA and MACE-OFF23
+**weights are excluded**; they still require access/licence approval and an online
+download. The offline edition is currently Windows x64 only. GitHub's **Source
+code** archives are not installers.
 
 | Platform | Installation |
 | --- | --- |
-| Windows 10 (1809+) / 11, x64 | Run the setup executable, or extract the portable ZIP and open `MoleculeStudio.exe`. Keep the `_internal` folder beside it. |
+| Windows 10 (1809+) / 11, x64 | Run the setup executable, or extract the portable ZIP and open `MoleculeStudio.exe`. Keep all extracted folders beside it, including `_internal` and `mlip-offline` when supplied. |
 | macOS 15+, Apple Silicon or Intel | Experimental packaging. Choose the matching DMG and drag **Molecule Studio** into **Applications**. |
 | Linux | Install from source as described below. |
 
@@ -65,6 +79,15 @@ validation is pending. Build and first-launch instructions:
    points, or the selected mode from **Results → Vibrations**. Rendering is local
    and cancellable; no external video encoder is needed.
 
+Click **Measure** above the canvas and choose **Bond length**, **Angle**, or
+**Dihedral**, then pick 2, 3, or 4 atoms in order. For an angle, pick its vertex
+second; for a dihedral, pick along the four-atom torsion. The readout shows atom
+indices and Å or degrees, with a dashed guide on the structure. Distances can
+also be measured between unbonded atoms. **Clear** or Escape resets the picks;
+click Measure again to close the tool. The same tool works in Calculation,
+Compare, Figure, and 3D Build. Values update during trajectory/vibration playback
+and builder drags; new calculations clear the picks.
+
 Enable **View → Fog / depth cue** to fade distant geometry into the background.
 Click **Depth cue**, then an atom, to set where fading starts. With fog enabled,
 right-drag empty space horizontally to move its start depth; **Shift + right-drag**
@@ -90,13 +113,25 @@ multiplicity, method, basis, solvent, resources, and additional keywords are
 editable. ORCA memory per process uses 80% of the entered total memory budget.
 The app prepares inputs; running calculations requires the corresponding engine.
 
-For MLIP-driven jobs, open the saved ASE/Sella trajectory or geomeTRIC optimization
-XYZ; optimizer logs alone may lack coordinates. ASE energies are read in eV and
-geomeTRIC energies in Hartree, then displayed in Hartree. Plain XYZ energies need
-an explicit unit; unknown values stay blank. No ML model or calculator is executed.
-Frames must have identical atom identities/order. Periodic trajectories show their
-stored coordinates without periodic images or unwrapping. Orbital, frequency, and
-excited-state results are available only when present in a supported output file.
+**Local MLIP** runs calculations in separate, versioned environments. Select a
+backend/checkpoint and click **Set up selected model**. The app installs Python
+and dependencies, manages all paths, prepares the checkpoint and checks it.
+The MLIP Offline edition uses its bundled files for public models; the GUI
+edition downloads them on first setup.
+It prompts for Hugging Face access or licence acknowledgement when required.
+Then capture a structure and queue a job. Cached models work offline. An existing
+Python environment can still be connected under **Advanced setup**; no path entry
+is needed for the automatic workflow. Public MACE-ANI-CC and AIMNet2
+were tested on Windows and Linux CPU. UMA and MACE-OFF23 weight validation remain
+pending access/licence approval. Follow the [MLIP guide](docs/MLIP.md) for job
+settings, constraints, continuation and platform limits.
+
+Saved ASE/Sella trajectories and geomeTRIC optimization XYZ can also be opened
+without running a model. Energies are converted to Hartree for the existing
+views; plain XYZ requires an explicit energy unit. Atom identities/order must
+match across frames. Periodic files display stored Cartesian coordinates; local
+MLIP workflows reject periodic inputs. Missing orbitals, electronic spectra,
+IR intensities and Raman activities remain unavailable.
 
 Save builder work with **Export MOL** before closing; drafts are not saved
 automatically. MOL preserves bond orders; XYZ does not. Generated coordinates
@@ -137,7 +172,10 @@ python -m pip install ".[dev]"
 molecule-studio
 ```
 
-Run the Python tests with `python -m pytest -q`. Desktop integration tests in
+Run the Python tests with `python -m pytest -q`. Run
+`python -m pytest tests/test_mlip_engine.py -q` in a compatible calculation
+environment for the additional Sella checks. Real-checkpoint and packaged-app
+commands are in the [acceptance guide](docs/MLIP_ACCEPTANCE.md). Desktop integration tests in
 `tests/*_smoke.py` require a graphical session.
 
 Bundled renderer and editor assets are included in the repository. Editing

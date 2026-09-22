@@ -54,7 +54,7 @@ def coordinate(name, coords, program):
         b1 = b1/np.maximum(np.linalg.norm(b1, axis=1)[:, None], 1e-15)
         v = b0 - np.sum(b0*b1, axis=1)[:, None]*b1
         w = b2 - np.sum(b2*b1, axis=1)[:, None]*b1
-        return np.degrees(np.arctan2(np.sum(np.cross(b1, v)*w, axis=1), np.sum(v*w, axis=1))), name + ' / °'
+        return (np.degrees(np.arctan2(np.sum(np.cross(b1, v)*w, axis=1), np.sum(v*w, axis=1))) + 180) % 360 - 180, name + ' / °'
     return None, name
 
 

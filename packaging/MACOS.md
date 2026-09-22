@@ -36,8 +36,8 @@ not claimed as supported. These are separate native apps, not a universal app.
 
 | Mac | Download |
 | --- | --- |
-| Apple M-series chip | `MoleculeStudio-0.3.1-macOS-AppleSilicon.dmg` |
-| Intel processor | `MoleculeStudio-0.3.1-macOS-Intel.dmg` |
+| Apple M-series chip | `MoleculeStudio-<version>-macOS-AppleSilicon.dmg` |
+| Intel processor | `MoleculeStudio-<version>-macOS-Intel.dmg` |
 
 Open the DMG, drag **Molecule Studio** onto **Applications**, eject the DMG,
 then open the app from Applications. The alternative ZIP contains the same

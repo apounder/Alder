@@ -28,7 +28,7 @@ export function measure(atoms, indices) {
   const m = n1.clone().cross(b2.clone().normalize());
   return {
     kind: "Dihedral",
-    value: MathUtils.radToDeg(Math.atan2(m.dot(n2), n1.dot(n2))),
+    value: (MathUtils.radToDeg(Math.atan2(-m.dot(n2), n1.dot(n2))) + 180) % 360 - 180,
     unit: "°",
   };
 }

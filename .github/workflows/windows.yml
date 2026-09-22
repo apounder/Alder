@@ -2,6 +2,11 @@ name: Windows download
 
 on:
   workflow_dispatch:
+    inputs:
+      offline_mlip:
+        description: Build the larger offline CPU edition as well as the GUI edition
+        type: boolean
+        default: true
   push:
     tags: ['v*']
   pull_request:
@@ -12,7 +17,7 @@ permissions:
 jobs:
   windows:
     runs-on: windows-2022
-    timeout-minutes: 45
+    timeout-minutes: 120
     defaults:
       run:
         shell: pwsh
@@ -44,37 +49,69 @@ jobs:
         run: python tests/raytrace_smoke.py
       - name: Check figure bonds, fog gestures, and XYZ viewing
         run: python tests/figure_smoke.py
-      - name: Build and check standalone application
-        run: python scripts/build_windows.py
-      - name: Check installer, installed application, and uninstall
+      - name: Check measurement controls and live geometry updates
+        run: python tests/measurements_smoke.py
+      - name: Check light native controls
+        run: python tests/light_controls_smoke.py
+      - name: Prepare and validate offline CPU environments and public models
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.offline_mlip)
         run: |
-          $setup = (Get-ChildItem dist/release/*-Setup.exe).FullName
-          $installDir = Join-Path $env:RUNNER_TEMP 'Molecule Studio installé'
-          $install = Start-Process $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$installDir`"", "/LOG=`"$env:GITHUB_WORKSPACE\build\installer.log`"" -Wait -PassThru
-          if ($install.ExitCode -ne 0) { throw "Installer failed: $($install.ExitCode)" }
-          $shortcut = Join-Path ([Environment]::GetFolderPath('Programs')) 'Molecule Studio/Molecule Studio.lnk'
-          if (-not (Test-Path $shortcut)) { throw 'Start-menu shortcut is missing' }
-          $report = Join-Path $env:GITHUB_WORKSPACE 'build/installed-smoke.json'
-          $fixtures = Join-Path $env:GITHUB_WORKSPACE 'tests/data'
-          $env:PATH = "$env:SystemRoot\System32"
-          Remove-Item Env:PYTHONPATH, Env:PYTHONHOME, Env:QT_PLUGIN_PATH -ErrorAction SilentlyContinue
-          try {
-            $app = Start-Process "$installDir\MoleculeStudio.exe" -WorkingDirectory $env:RUNNER_TEMP -ArgumentList '--smoke-test', "`"$report`"", "`"$fixtures`"" -PassThru
-            if (-not $app.WaitForExit(300000)) { $app.Kill(); throw 'Installed app timed out' }
-            if ($app.ExitCode -ne 0) { throw "Installed app failed: $($app.ExitCode)" }
-            $result = Get-Content $report -Raw | ConvertFrom-Json
-            if (-not $result.ok -or -not $result.frozen) { throw 'Installed app check failed' }
-          } finally {
-            $uninstall = Start-Process "$installDir\unins000.exe" -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait -PassThru
-            if ($uninstall.ExitCode -ne 0) { throw "Uninstall failed: $($uninstall.ExitCode)" }
+          python scripts/prepare_mlip_offline.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tests/mlip_offline_smoke.py --bundle .build-tools/mlip-offline --report build/offline-environments-smoke.json
+      - name: Build and check standalone application
+        run: |
+          if (Test-Path .build-tools/mlip-offline/manifest.json) {
+            python scripts/build_windows.py --offline-kit .build-tools/mlip-offline
+          } else {
+            python scripts/build_windows.py
           }
-          if (Test-Path "$installDir\MoleculeStudio.exe") { throw 'Uninstall left the executable behind' }
-          if (Test-Path $shortcut) { throw 'Uninstall left the shortcut behind' }
-      - name: Upload Windows downloads
+      - name: Check each installer, installed application, and uninstall
+        run: |
+          foreach ($setup in (Get-ChildItem dist/release/*-Setup.exe)) {
+            $offline = $setup.Name -like '*-MLIP-Offline-*'
+            $installDir = Join-Path $env:RUNNER_TEMP 'Molecule Studio installé'
+            $install = Start-Process $setup.FullName -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$installDir`"", "/LOG=`"$env:GITHUB_WORKSPACE\build\installer.log`"" -Wait -PassThru
+            if ($install.ExitCode -ne 0) { throw "Installer failed: $($install.ExitCode)" }
+            $shortcut = Join-Path ([Environment]::GetFolderPath('Programs')) 'Molecule Studio/Molecule Studio.lnk'
+            if (-not (Test-Path $shortcut)) { throw 'Start-menu shortcut is missing' }
+            $reportName = if ($offline) { 'offline-installed-smoke.json' } else { 'installed-smoke.json' }
+            $report = Join-Path $env:GITHUB_WORKSPACE "build/$reportName"
+            $fixtures = Join-Path $env:GITHUB_WORKSPACE 'tests/data'
+            $arguments = if ($offline) { @('--mlip-smoke-test', "`"$report`"") } else { @('--smoke-test', "`"$report`"", "`"$fixtures`"") }
+            $env:PATH = "$env:SystemRoot\System32"
+            Remove-Item Env:PYTHONPATH, Env:PYTHONHOME, Env:QT_PLUGIN_PATH -ErrorAction SilentlyContinue
+            try {
+              $app = Start-Process "$installDir\MoleculeStudio.exe" -WorkingDirectory $env:RUNNER_TEMP -ArgumentList $arguments -PassThru
+              if (-not $app.WaitForExit(1800000)) { $app.Kill(); throw 'Installed app timed out' }
+              if ($app.ExitCode -ne 0) { throw "Installed app failed: $($app.ExitCode)" }
+              $result = Get-Content $report -Raw | ConvertFrom-Json
+              if (-not $result.ok -or -not $result.frozen) { throw 'Installed app check failed' }
+            } finally {
+              $uninstall = Start-Process "$installDir\unins000.exe" -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait -PassThru
+              if ($uninstall.ExitCode -ne 0) { throw "Uninstall failed: $($uninstall.ExitCode)" }
+            }
+            if (Test-Path "$installDir\MoleculeStudio.exe") { throw 'Uninstall left the executable behind' }
+            if (Test-Path $shortcut) { throw 'Uninstall left the shortcut behind' }
+          }
+      - name: Upload GUI downloads
         uses: actions/upload-artifact@v7
         with:
-          name: MoleculeStudio-Windows-x64
-          path: dist/release/*
+          name: MoleculeStudio-Windows-x64-GUI
+          path: |
+            dist/release/*-GUI-*
+            dist/release/SHA256SUMS.txt
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload MLIP Offline downloads
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.offline_mlip)
+        uses: actions/upload-artifact@v7
+        with:
+          name: MoleculeStudio-Windows-x64-MLIP-Offline
+          path: |
+            dist/release/*-MLIP-Offline-*
+            dist/release/SHA256SUMS.txt
           compression-level: 0
           if-no-files-found: error
           retention-days: 30

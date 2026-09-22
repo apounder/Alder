@@ -209,6 +209,7 @@ class SketchMixin:
         self.fit_button.setVisible(not (active and is2d))
         self.view_options.setVisible(not (active and is2d))
         self.depth_cue.setVisible(not (active and is2d))
+        self.update_measurement_ui()
         for mode, button in self.builder_modes.items():
             button.setChecked(mode == self.builder_mode)
             button.setEnabled(not self.converting)

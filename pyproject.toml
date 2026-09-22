@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "molecule-studio"
-version = "0.3.1"
+version = "0.4.0"
 description = "Offline desktop molecular viewer and editor for Gaussian, ORCA, structures, and cube fields"
 requires-python = ">=3.11"
 dependencies = [
@@ -24,7 +24,7 @@ molecule-studio = "molecule_studio.launcher:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-molecule_studio = ["assets/*"]
+molecule_studio = ["assets/*", "mlip/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

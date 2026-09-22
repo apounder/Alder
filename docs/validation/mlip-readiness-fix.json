@@ -1,0 +1,21 @@
+{
+  "date": "2026-09-22",
+  "scope": "Automatic readiness check on queue after reopening the desktop",
+  "focused_tests": {
+    "Windows": "7 passed, including 8 isolated Qt scenarios",
+    "Linux": "7 passed, including 8 isolated Qt scenarios"
+  },
+  "packaged_windows": {
+    "ok": true,
+    "frozen": true,
+    "checks": [
+      "Native MLIP setup, all job types, and packaged external worker sources",
+      "External environment probe and real AIMNet2 checkpoint/device check",
+      "Queue after desktop restart automatically checks the cached model and submits the captured input",
+      "Queued optimization \u2192 frequency child, Hartree result adapter, unavailable intensities, normal modes",
+      "Responsive desktop cancellation, persisted exact MD checkpoint, bounded trajectory page",
+      "History and interrupted-job recovery after desktop restart"
+    ]
+  },
+  "downloads": "Existing public AIMNet2 cache; no weights downloaded for this check."
+}

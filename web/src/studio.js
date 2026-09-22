@@ -72,6 +72,12 @@ async function command(cmd) {
     } else if(cmd.action==='separate')editor.insertFragment(fragment,{anchor:null});
     return;
   }
+  if(cmd.type==='measure') {
+    editor.cancel();
+    if(!readonly)editor.setTool('select');
+    editor.selection=[];editor.armed=editor.hover=null;
+    view.setMeasurementCount(cmd.count);editor.update();return;
+  }
   if(cmd.type==='fit'){view.fit();return;}
   if(cmd.type==='element'){editor.element=cmd.element;editor.setTool('add');return;}
   if(cmd.type==='tool'){editor.setTool(cmd.tool);return;}
@@ -81,7 +87,7 @@ async function command(cmd) {
   if(cmd.type==='delete'){editor.delete(editor.selection);return;}
   if(cmd.type==='escape'){
     if(view.depthPicking||view.fogDrag)view.cancelDepthCue();
-    else {editor.selection=[];editor.setTool('select');}
+    else {editor.selection=[];editor.armed=editor.hover=null;editor.setTool('select');editor.update();}
     return;
   }
   if(cmd.type==='apply'){editor.applyElement();return;}
@@ -104,6 +110,7 @@ new QWebChannel(qt.webChannelTransport, channel=>{
   try {
     view=new StudioView(document.querySelector('#viewport'));
     view.onFogChange=state=>bridge.fogChanged(JSON.stringify(state));
+    view.onMeasurementChange=state=>bridge.measurementChanged(state);
     for(const overlay of [view.hover,view.halos,view.prospect,view.measureLine])overlay.material.color.set('#189143');
     editor=new StudioEditor(view,{getModel:()=>model,onChange:changed,onState:report,toast:notice});
     const canvas=view.renderer.domElement;let figureStart;
@@ -116,6 +123,7 @@ new QWebChannel(qt.webChannelTransport, channel=>{
       const hit=view.pick(e);if(hit!==null)editor.select(hit,e.shiftKey);
     });
     view.onMeasurement=(m,text)=>{measurement=m?`${m.kind} · ${text}`:'';};
+    window.addEventListener('keydown',e=>{if(e.key==='Escape'){command({type:'escape'});e.preventDefault();}});
     view.syncModel(model);view.fit();view.setActive(false);
     bridge.command.connect(text=>{if(JSON.parse(text).type==='exportCancel'){cancelExport(view);return;}queue=queue.then(()=>command(JSON.parse(text))).then(report).catch(error=>{notice(error.message||String(error),'error');bridge.reportError(String(error));busy=false;report();});});
     window.builderApp={view,editor,get model(){return model;},command};

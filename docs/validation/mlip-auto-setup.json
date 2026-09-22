@@ -1,0 +1,68 @@
+{
+  "date": "2026-09-22",
+  "scope": "Automatic MLIP setup. Public AIMNet2 weights on Windows CPU; gated/licensed downloads left pending.",
+  "regression": {
+    "Windows": {
+      "passed": 95,
+      "skipped": 1
+    },
+    "Linux": {
+      "passed": 95,
+      "skipped": 1
+    },
+    "skip_reason": "Sella is absent from the GUI-only test environment; it is present in the tested managed environment."
+  },
+  "isolated_qt_setup_scenarios": {
+    "count": 5,
+    "platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "worker": "Simulated downloads/authentication, real Qt process chaining",
+    "covers": [
+      "fresh install and cache reuse",
+      "failure/cancellation and retry",
+      "gated login chaining and credential redaction",
+      "declined licence acknowledgement",
+      "unavailable CUDA without silent CPU substitution"
+    ]
+  },
+  "packaged_windows": {
+    "ok": true,
+    "frozen": true,
+    "checks": [
+      "Native MLIP setup, all job types, and packaged external worker sources",
+      "One-click fresh AIMNet2 setup: managed Python, dependencies, public checkpoint download and real readiness check",
+      "Repeated automatic setup reuses the installed environment and cached checkpoint",
+      "External environment probe and real AIMNet2 checkpoint/device check",
+      "Queued optimization \u2192 frequency child, Hartree result adapter, unavailable intensities, normal modes",
+      "Responsive desktop cancellation, persisted exact MD checkpoint, bounded trajectory page",
+      "History and interrupted-job recovery after desktop restart"
+    ]
+  },
+  "environment_versions": {
+    "ase": "3.29.0",
+    "numpy": "2.4.3",
+    "scipy": "1.17.1",
+    "torch": "2.13.0",
+    "sella": "2.6.0",
+    "rdkit": "2026.3.6",
+    "aimnet": "0.2.0"
+  },
+  "model": {
+    "backend": "aimnet2",
+    "checkpoint": "aimnet2-wb97m-d3_0",
+    "device": "cpu",
+    "precision": "float32",
+    "task": null,
+    "head": null,
+    "corrections": "checkpoint",
+    "sha256": "f0f7c054539ad3261bd36f9b11c56d12f87cb723e25bea7521755bbd3ec24e28"
+  },
+  "pending": [
+    "Real Hugging Face account login and UMA download",
+    "MACE-OFF23 licence-restricted downloads",
+    "macOS runtime",
+    "CUDA runtime"
+  ]
+}

@@ -7,6 +7,8 @@ let viewer,bridge,volume=null,colorVolume=null,cubeVisible=false,shapes=[],vdwSu
 let surfaceOptions={isoval:0.03,opacity:0.75,signed:true,mode:'orbital',min:-0.05,max:0.05,scale:1,gradient:'esp',legend:true};
 let commandQueue=Promise.resolve(),vibration=null,annotationKey=null,comparison=false,annotations=new Map();
 const documentAnnotations=new Map();
+let comparisonKey='';
+const sameAtoms=model=>model.atoms.length===viewer.model.atoms.length && model.atoms.every((a,i)=>a.el===viewer.model.atoms[i].el);
 const pairKey=(a,b)=>[Math.min(a,b),Math.max(a,b)].join(':');
 function applyAnnotations(model, edits=annotations) {
   model.bonds=model.bonds.filter(b=>!edits.has(pairKey(b.a,b.b)));
@@ -202,7 +204,8 @@ async function startVibration(cmd) {
   if(vectors.length!==model.atoms.length||vectors.some(v=>v.length!==3||v.some(x=>!Number.isFinite(x))))throw Error('Invalid vibrational displacement vectors');
   const max=Math.max(...vectors.map(v=>Math.hypot(...v)),1e-12);
   stopVibration();cubeVisible=false;await surfaces();
-  viewer.syncModel(applyAnnotations(model));viewer.updateOverlays([],null);
+  const selected=sameAtoms(model)?viewer.selection:[];
+  viewer.syncModel(applyAnnotations(model));viewer.updateOverlays(selected,null);
   vibration={mode:cmd.mode,base:model.atoms.map(a=>[a.x,a.y,a.z]),vectors:vectors.map(v=>v.map(x=>x/max)),phase:0,amplitude:.3,rate:.7,playing:false};
   window.sceneState.atoms=model.atoms.length;
   vibrationSettings(cmd);
@@ -224,6 +227,8 @@ async function handleCommand(cmd) {
     return;
   }
   if(cmd.type==='comparison') {
+    const key=JSON.stringify(cmd.structures.map(s=>s.annotationKey)),selected=comparison&&key===comparisonKey?viewer.selection:[];
+    comparisonKey=key;
     stopVibration();comparison=true;cubeVisible=false;await surfaces();
     const model={name:'Structure comparison',atoms:[],bonds:[]};
     for(const [index,structure] of cmd.structures.entries()) {
@@ -231,7 +236,7 @@ async function handleCommand(cmd) {
       model.atoms.push(...part.atoms.map(a=>({...a,structureColor:structure.color,structureIndex:index})));
       model.bonds.push(...part.bonds.map(b=>({...b,a:b.a+offset,b:b.b+offset})));
     }
-    viewer.syncModel(model);viewer.updateOverlays([],null);
+    viewer.syncModel(model);viewer.updateOverlays(selected,null);
     window.sceneState.atoms=model.atoms.length;window.sceneState.structures=cmd.structures.length;
     window.sceneState.error=null;
     document.getElementById('hint').hidden=!!model.atoms.length;
@@ -254,6 +259,7 @@ async function handleCommand(cmd) {
   if(cmd.type==='vibrationSettings'){vibrationSettings(cmd);return;}
   if(cmd.type==='vibrationStop'){stopVibration();return;}
   if(cmd.type==='geometry') {
+    const documentChanged=comparison || (cmd.annotationKey!==undefined&&cmd.annotationKey!==annotationKey);
     comparison=false;window.sceneState.structures=1;
     stopVibration();
     if(cmd.annotationKey!==undefined&&cmd.annotationKey!==annotationKey){
@@ -264,9 +270,10 @@ async function handleCommand(cmd) {
     const model=cmd.model?validateModel(cmd.model):cmd.xyz?.startsWith('0\n')?{atoms:[],bonds:[]}:parseXYZ(cmd.xyz);
     applyAnnotations(model);
     // Reuse GPU buffers for trajectory frames with unchanged topology.
-    const same=model.atoms.length===viewer.model.atoms.length && model.atoms.every((a,i)=>a.el===viewer.model.atoms[i].el) && JSON.stringify(model.bonds)===JSON.stringify(viewer.model.bonds);
+    const selected=!documentChanged&&sameAtoms(model)?viewer.selection:[];
+    const same=sameAtoms(model) && JSON.stringify(model.bonds)===JSON.stringify(viewer.model.bonds);
     viewer.syncModel(model,{full:!same,changed:model.atoms.map((_,i)=>i)});
-    viewer.updateOverlays([] ,null);window.sceneState.atoms=model.atoms.length;
+    viewer.updateOverlays(selected,null);window.sceneState.atoms=model.atoms.length;
     document.getElementById('hint').hidden=!!model.atoms.length;
     if(cmd.fit)viewer.fit();
     if(cubeVisible!==cmd.surface || surfaceOptions.mode==='esp_vdw'){cubeVisible=cmd.surface;await surfaces();}
@@ -275,6 +282,7 @@ async function handleCommand(cmd) {
     colorVolume=cmd.mapping?new $3Dmol.VolumeData(cmd.mapping,'cube'):null;
     surfaceOptions=cmd.options||surfaceOptions;cubeVisible=!!cmd.text&&cmd.visible!==false;await surfaces();
   } else if(cmd.type==='surface') {surfaceOptions=cmd.options;cubeVisible=cmd.visible;await surfaces();}
+  else if(cmd.type==='measure')viewer.setMeasurementCount(cmd.count);
   else if(cmd.type==='fog')viewer.setFog(cmd);
   else if(cmd.type==='fogPick')viewer.setDepthCuePick(cmd.enabled);
   else if(cmd.type==='style')viewer.setStyle(cmd);
@@ -289,6 +297,7 @@ new QWebChannel(qt.webChannelTransport,channel=>{
   try {
     viewer=new StudioView(document.getElementById('viewer'));viewer.syncModel({atoms:[],bonds:[]});viewer.fit();
     viewer.onFogChange=state=>bridge.fogChanged(JSON.stringify(state));
+    viewer.onMeasurementChange=state=>bridge.measurementChanged(state);
     viewer.isAnimating=()=>!!vibration?.playing;
     viewer.onFrame=(now,delta)=>{if(vibration?.playing){vibration.phase=(vibration.phase+delta*vibration.rate*2*Math.PI)%(2*Math.PI);poseVibration();}};
     window.calculationApp={view:viewer,get vibration(){return vibration;},get surfaceOptions(){return surfaceOptions;},get shapes(){return shapes;},get colorVolume(){return colorVolume;},get vdwSurface(){return vdwSurface;},sampledField,gradient};
@@ -301,7 +310,7 @@ new QWebChannel(qt.webChannelTransport,channel=>{
       if(e.button!==0||!start||Math.hypot(e.clientX-start.x,e.clientY-start.y)>5)return;
       const hit=viewer.pick(e);if(hit===null)return;
       let ids=[...viewer.selection];const k=ids.indexOf(hit);
-      if(k>=0)ids.splice(k,1);else{if(ids.length>=4)ids=[];ids.push(hit);}
+      if(k>=0)ids.splice(k,1);else{if(ids.length>=(viewer.measurementCount||4))ids=[];ids.push(hit);}
       viewer.updateOverlays(ids,hit);
     });
     window.addEventListener('keydown',e=>{if(e.key==='Escape')viewer.updateOverlays([],null);});

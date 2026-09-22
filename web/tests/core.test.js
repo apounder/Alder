@@ -403,3 +403,11 @@ test('Fragment substitution consumes joining hydrogens even when automatic H adj
   const after=structuredClone(model);assert.equal(editor.undoStack.length,1);
   editor.undo();assert.deepEqual(model,before);editor.redo();assert.deepEqual(model,after);
 });
+
+
+test("signed dihedrals agree with ASE and wrap at 180 degrees", () => {
+  const atoms = [[-2,0,0],[0,0,0],[0,2,0],[0,2,2]].map(([x,y,z])=>({el:"C",x,y,z}));
+  assert.equal(measure(atoms,[0,1,2,3]).value,90);
+  atoms[3].z=-2;assert.equal(measure(atoms,[0,1,2,3]).value,-90);
+  atoms[3].z=0;atoms[3].x=2;assert.equal(measure(atoms,[0,1,2,3]).value,-180);
+});

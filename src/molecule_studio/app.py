@@ -103,6 +103,7 @@ class Window(ComparisonMixin, ExportMixin, ResultsMixin, BuilderMixin, QMainWind
         self.step = 0
         self.vibration_preview = False
         self.init_builder()
+        self.measurement_states = {}
         self.renderer_ready = False
         self.busy = False
         self.pending_files = []
@@ -121,6 +122,8 @@ class Window(ComparisonMixin, ExportMixin, ResultsMixin, BuilderMixin, QMainWind
         self.surface_timer.timeout.connect(self.refresh_surface)
         self.setAcceptDrops(True)
         self.build_ui()
+        from .mlip_ui import JobManager
+        self.mlip_manager = JobManager(self)
         self.statusBar().showMessage("Ready · Files stay on this machine")
 
     def build_ui(self):
@@ -319,11 +322,41 @@ class Window(ComparisonMixin, ExportMixin, ResultsMixin, BuilderMixin, QMainWind
         if self.calculation:
             self.select_step(self.step)
 
+    def choose_measurement(self, enabled=True):
+        if self.depth_cue.isChecked():
+            self.depth_cue.setChecked(False)
+            self.send(type='fogPick', enabled=False)
+        self.send(type='measure', count=self.measurement_kind.currentData() if enabled else 0)
+
+    def measurement_changed(self, bridge, text):
+        self.measurement_states[bridge] = json.loads(text)
+        self.update_measurement_ui()
+
+    def update_measurement_ui(self):
+        if not hasattr(self, 'measure_button'):
+            return
+        bridge = self.builder_bridge if self.builder_active else self.bridge
+        state = self.measurement_states.get(bridge, {})
+        count = state.get('count', 0)
+        visible = not (self.builder_active and self.builder_editing and getattr(self, 'builder_mode', '3d') == '2d')
+        self.measure_button.setVisible(visible)
+        self.measure_button.setChecked(bool(count))
+        self.measurement_panel.setVisible(visible and bool(count))
+        if count:
+            self.measurement_kind.blockSignals(True)
+            self.measurement_kind.setCurrentIndex(self.measurement_kind.findData(count))
+            self.measurement_kind.blockSignals(False)
+        atoms = state.get('atoms', [])
+        result = state.get('text', '')
+        kind = 'Bond length' if state.get('kind') == 'Distance' else state.get('kind', '')
+        self.measurement_readout.setText((' → '.join(atoms) + '\n' if atoms else '') +
+                                        (f'{kind} · {result}' if result else f'Pick {count or 2} atoms in order ({len(atoms)}/{count or 2}).'))
+
     def send(self, **payload):
         kind = payload.get("type")
         if kind in {"style", "appearance", "fog"} and hasattr(self, "builder_bridge"):
             self.builder_command(**payload)
-        if kind in {"fit", "annotation", "fogPick", "exportCancel"} and self.builder_active:
+        if kind in {"fit", "annotation", "fogPick", "measure", "exportCancel"} and self.builder_active:
             self.builder_command(**payload)
             return
         if kind == "export" and self.builder_active:
@@ -673,6 +706,12 @@ class Window(ComparisonMixin, ExportMixin, ResultsMixin, BuilderMixin, QMainWind
                 QMessageBox.warning(self, "Export failed", str(error))
 
     def closeEvent(self, event):
+        dialog = getattr(self, "mlip_dialog", None)
+        if dialog and ((dialog.setup_task and dialog.setup_task.isRunning()) or dialog.control_process or (hasattr(dialog, "export_task") and dialog.export_task.isRunning())):
+            QMessageBox.information(self, "Setup or export in progress", "Wait for the environment operation or trajectory export before closing the application.")
+            event.ignore()
+            return
+        self.mlip_manager.shutdown()
         if self.exporting:
             self.send(type="exportCancel")
             self.end_export_progress()

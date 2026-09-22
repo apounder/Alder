@@ -2,9 +2,10 @@ MOLECULE STUDIO FOR WINDOWS
 
 Portable ZIP: right-click the ZIP, choose Extract All, open the extracted
 MoleculeStudio folder, and double-click MoleculeStudio.exe.
-Keep the _internal folder next to the executable. Do not run from inside the ZIP.
+Keep the _internal folder next to the executable. For MLIP Offline, also keep
+the complete mlip-offline folder. Do not run from inside the ZIP.
 
-Installer: double-click MoleculeStudio-<version>-Windows-x64-Setup.exe and
+Installer: double-click MoleculeStudio-<version>-Windows-x64-<edition>-Setup.exe and
 follow the installation window. Open Molecule Studio from the Start menu.
 Installation is for your Windows account and does not require administrator
 rights. Remove it through Windows Settings > Apps > Installed apps.
@@ -12,6 +13,19 @@ rights. Remove it through Windows Settings > Apps > Installed apps.
 Python, npm, Node.js, a browser, and a localhost server are not required.
 The editors, chemistry engine, and renderer are included and work offline.
 Open files from inside Studio or drag files onto its window.
+
+DOWNLOAD EDITIONS
+GUI: viewer/editor and exports work offline. Local MLIP setup downloads its
+calculation environment and public models when requested.
+MLIP Offline: includes CPU environments for MACE, AIMNet2 and UMA, plus public
+MACE-ANI-CC and four AIMNet2 models. Open Local MLIP, select the model, and click
+Set up selected model. Setup uses bundled files and configures paths for you.
+Allow several GB of free disk space per calculator.
+
+UMA and MACE-OFF23 weights are not included. Those still need model access or
+licence acknowledgement and an online download. No account credentials or CUDA
+runtime is included. Both editions have the same application features.
+Switching editions preserves separate calculation caches and job history.
 
 Target: 64-bit Windows 10 (1809+) / Windows 11 with working graphics drivers.
 Windows on ARM runs this x64 build through emulation; no native ARM64 build

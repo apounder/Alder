@@ -14,6 +14,10 @@ class ExportBridge(QObject):
     export_finished = Signal(str)
 
     @Slot(str)
+    def measurementChanged(self, state):
+        self.parent().measurement_changed(self, state)
+
+    @Slot(str)
     def fogChanged(self, state):
         self.parent().fog_changed(state)
 

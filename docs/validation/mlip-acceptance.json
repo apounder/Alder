@@ -1,0 +1,673 @@
+{
+  "date": "2026-09-22",
+  "scope": "Public checkpoints, CPU. Technical integration and numerical checks, not universal chemical accuracy.",
+  "numerical": {
+    "mace": {
+      "max_force_gradient_error": 6.621827295490157e-05,
+      "max_frequency_difference_cm1": 1.2852505982709772
+    },
+    "aimnet2": {
+      "max_force_gradient_error": 0.000713445246219635,
+      "max_frequency_difference_cm1": 1.810486312689136
+    }
+  },
+  "real_model_jobs": [
+    {
+      "platform": "Linux aarch64",
+      "backend": "mace",
+      "provenance": {
+        "model": {
+          "name": "MACE-ANI-CC",
+          "backend": "mace",
+          "elements": [
+            1,
+            6,
+            7,
+            8
+          ],
+          "domain": "ANI-1ccx neutral closed-shell HCNO small-organic conformational domain; no general reaction-path accuracy guarantee.",
+          "charge": "neutral",
+          "spin": "singlet",
+          "periodic": false,
+          "properties": [
+            "energy",
+            "forces"
+          ],
+          "precision": [
+            "float32",
+            "float64"
+          ],
+          "task": null,
+          "head": null,
+          "correction": "Learned coupled-cluster reference; no additional dispersion",
+          "url": "https://raw.githubusercontent.com/ACEsuit/mace/c5c65fe77aa6fdc0e2c587a95abc52734d9ddb8e/mace/calculators/foundations_models/ani500k_large_CC.model",
+          "license": "MIT (MACE-ANI-CC checkpoint)",
+          "sha256": "7ad311c590b7df90a1d4aa34d997a8c419fdb7ae777296350869614e9e07b69d"
+        },
+        "device": "cpu",
+        "precision": "float64",
+        "task": null,
+        "head": null,
+        "corrections": "Learned coupled-cluster reference; no additional dispersion",
+        "software": {
+          "ase": "3.29.0",
+          "numpy": "2.4.3",
+          "scipy": "1.17.1",
+          "torch": "2.13.0",
+          "mace-torch": "0.3.16",
+          "aimnet": "0.2.0",
+          "sella": "2.6.0",
+          "rdkit": "2026.3.6"
+        },
+        "python": "3.12.14",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.43"
+      },
+      "results": {
+        "single_point": {
+          "state": "completed",
+          "seconds": 0.4920228400005726,
+          "frames": 1
+        },
+        "force_consistency": {
+          "error_eV_per_A": 6.0213128675296046e-05,
+          "tolerance": 0.002
+        },
+        "opt_BFGS": {
+          "state": "completed",
+          "seconds": 0.6472729520028224,
+          "frames": 3
+        },
+        "opt_LBFGS": {
+          "state": "completed",
+          "seconds": 0.5770261630095774,
+          "frames": 3
+        },
+        "opt_FIRE": {
+          "state": "completed",
+          "seconds": 1.9723559690028196,
+          "frames": 10
+        },
+        "optimization_frequencies": {
+          "state": "completed",
+          "seconds": 0.9772073820058722,
+          "frames": 5
+        },
+        "frequencies": [
+          1646.35727161034,
+          3838.3605647272534,
+          3942.4059857074853
+        ],
+        "constrained": {
+          "state": "completed",
+          "seconds": 0.7802676450082799,
+          "frames": 4
+        },
+        "scan_1d": {
+          "state": "completed",
+          "seconds": 2.129968496999936,
+          "frames": 11
+        },
+        "scan_2d": {
+          "state": "completed",
+          "seconds": 2.5500336850091117,
+          "frames": 12
+        },
+        "transition_state": {
+          "state": "completed",
+          "seconds": 4.053534386999672,
+          "frames": 8
+        },
+        "saddle_verification": {
+          "imaginary_modes": [
+            0
+          ],
+          "search_converged": true,
+          "verified_first_order_saddle": true
+        },
+        "irc_both": {
+          "state": "completed",
+          "seconds": 9.53776356500748,
+          "frames": 19
+        },
+        "climbing_neb": {
+          "state": "completed",
+          "seconds": 40.22172838800179,
+          "frames": 80
+        },
+        "md_nve": {
+          "state": "completed",
+          "seconds": 5.431653855994227,
+          "frames": 7
+        },
+        "md_nvt": {
+          "state": "completed",
+          "seconds": 5.343134302995168,
+          "frames": 7
+        },
+        "conformer_search": {
+          "state": "completed",
+          "seconds": 13.885417394005344,
+          "frames": 64
+        },
+        "conformers_retained": [
+          {
+            "candidate": 0,
+            "energy": -2169.4137124411886,
+            "frame": 27,
+            "rank": 1
+          }
+        ]
+      }
+    },
+    {
+      "platform": "Linux aarch64",
+      "backend": "aimnet2",
+      "provenance": {
+        "model": {
+          "name": "aimnet2-wb97m-d3_0",
+          "backend": "aimnet2",
+          "elements": [
+            1,
+            5,
+            6,
+            7,
+            8,
+            9,
+            14,
+            15,
+            16,
+            17,
+            33,
+            34,
+            35,
+            53
+          ],
+          "domain": "Isolated organic/main-group molecules and clusters; no metals or implicit solvent; closed shell.",
+          "charge": "explicit",
+          "spin": "singlet",
+          "periodic": false,
+          "properties": [
+            "energy",
+            "forces",
+            "charges"
+          ],
+          "precision": [
+            "float32"
+          ],
+          "task": null,
+          "head": null,
+          "correction": "Official checkpoint metadata controls Coulomb and D3; additional corrections disabled",
+          "url": "https://storage.googleapis.com/aimnetcentral/aimnet2v2/AIMNet2/aimnet2_wb97m_d3_0.pt",
+          "sha256": "f0f7c054539ad3261bd36f9b11c56d12f87cb723e25bea7521755bbd3ec24e28"
+        },
+        "device": "cpu",
+        "precision": "float32",
+        "task": null,
+        "head": null,
+        "corrections": "Official checkpoint metadata controls Coulomb and D3; additional corrections disabled",
+        "software": {
+          "ase": "3.29.0",
+          "numpy": "2.4.3",
+          "scipy": "1.17.1",
+          "torch": "2.13.0",
+          "mace-torch": "0.3.16",
+          "aimnet": "0.2.0",
+          "sella": "2.6.0",
+          "rdkit": "2026.3.6"
+        },
+        "python": "3.12.14",
+        "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.43"
+      },
+      "results": {
+        "single_point": {
+          "state": "completed",
+          "seconds": 0.16983086700201966,
+          "frames": 1
+        },
+        "force_consistency": {
+          "error_eV_per_A": 0.0004310682415962219,
+          "tolerance": 0.002
+        },
+        "opt_BFGS": {
+          "state": "completed",
+          "seconds": 0.23771551299432758,
+          "frames": 5
+        },
+        "opt_LBFGS": {
+          "state": "completed",
+          "seconds": 0.23235521699825767,
+          "frames": 5
+        },
+        "opt_FIRE": {
+          "state": "completed",
+          "seconds": 0.7059417460113764,
+          "frames": 16
+        },
+        "optimization_frequencies": {
+          "state": "completed",
+          "seconds": 0.2998069650057005,
+          "frames": 6
+        },
+        "frequencies": [
+          1594.0581918119417,
+          3789.8907833808385,
+          3941.841054680805
+        ],
+        "constrained": {
+          "state": "completed",
+          "seconds": 0.18148255799314938,
+          "frames": 3
+        },
+        "scan_1d": {
+          "state": "completed",
+          "seconds": 0.6027408270019805,
+          "frames": 13
+        },
+        "scan_2d": {
+          "state": "completed",
+          "seconds": 0.6173780149983941,
+          "frames": 12
+        },
+        "transition_state": {
+          "state": "completed",
+          "seconds": 0.8106006639864063,
+          "frames": 5
+        },
+        "saddle_verification": {
+          "imaginary_modes": [
+            0
+          ],
+          "search_converged": true,
+          "verified_first_order_saddle": true
+        },
+        "irc_both": {
+          "state": "completed",
+          "frames": 19
+        },
+        "climbing_neb": {
+          "state": "completed",
+          "seconds": 14.34363472199766,
+          "frames": 105
+        },
+        "md_nve": {
+          "state": "completed",
+          "seconds": 1.2882632660039235,
+          "frames": 7
+        },
+        "md_nvt": {
+          "state": "completed",
+          "seconds": 1.3159098970063496,
+          "frames": 7
+        },
+        "conformer_search": {
+          "state": "completed",
+          "seconds": 3.956423215000541,
+          "frames": 67
+        },
+        "conformers_retained": [
+          {
+            "candidate": 0,
+            "energy": -2173.4579228821945,
+            "frame": 28,
+            "rank": 1
+          }
+        ]
+      }
+    },
+    {
+      "platform": "Windows x64",
+      "backend": "mace",
+      "provenance": {
+        "model": {
+          "name": "MACE-ANI-CC",
+          "backend": "mace",
+          "elements": [
+            1,
+            6,
+            7,
+            8
+          ],
+          "domain": "ANI-1ccx neutral closed-shell HCNO small-organic conformational domain; no general reaction-path accuracy guarantee.",
+          "charge": "neutral",
+          "spin": "singlet",
+          "periodic": false,
+          "properties": [
+            "energy",
+            "forces"
+          ],
+          "precision": [
+            "float32",
+            "float64"
+          ],
+          "task": null,
+          "head": null,
+          "correction": "Learned coupled-cluster reference; no additional dispersion",
+          "url": "https://raw.githubusercontent.com/ACEsuit/mace/c5c65fe77aa6fdc0e2c587a95abc52734d9ddb8e/mace/calculators/foundations_models/ani500k_large_CC.model",
+          "license": "MIT (MACE-ANI-CC checkpoint)",
+          "sha256": "7ad311c590b7df90a1d4aa34d997a8c419fdb7ae777296350869614e9e07b69d"
+        },
+        "device": "cpu",
+        "precision": "float64",
+        "task": null,
+        "head": null,
+        "corrections": "Learned coupled-cluster reference; no additional dispersion",
+        "software": {
+          "ase": "3.29.0",
+          "numpy": "2.4.3",
+          "scipy": "1.17.1",
+          "torch": "2.13.0",
+          "mace-torch": "0.3.16",
+          "sella": "2.6.0",
+          "rdkit": "2026.3.6"
+        },
+        "python": "3.12.14",
+        "platform": "Windows-11-10.0.26200-SP0"
+      },
+      "results": {
+        "single_point": {
+          "state": "completed",
+          "seconds": 1.235000000000582,
+          "frames": 1
+        },
+        "force_consistency": {
+          "error_eV_per_A": 6.0213128676878114e-05,
+          "tolerance": 0.002
+        },
+        "opt_BFGS": {
+          "state": "completed",
+          "seconds": 1.4529999999940628,
+          "frames": 3
+        },
+        "opt_LBFGS": {
+          "state": "completed",
+          "seconds": 1.485000000000582,
+          "frames": 3
+        },
+        "opt_FIRE": {
+          "state": "completed",
+          "seconds": 5.0,
+          "frames": 10
+        },
+        "optimization_frequencies": {
+          "state": "completed",
+          "seconds": 2.5,
+          "frames": 5
+        },
+        "frequencies": [
+          1646.357271610339,
+          3838.3605647272498,
+          3942.4059857074817
+        ],
+        "constrained": {
+          "state": "completed",
+          "seconds": 1.937000000005355,
+          "frames": 4
+        },
+        "scan_1d": {
+          "state": "completed",
+          "seconds": 5.4689999999973224,
+          "frames": 11
+        },
+        "scan_2d": {
+          "state": "completed",
+          "seconds": 6.0,
+          "frames": 12
+        },
+        "transition_state": {
+          "state": "completed",
+          "frames": 5
+        },
+        "climbing_neb": {
+          "state": "completed",
+          "seconds": 113.70300000000861,
+          "frames": 80
+        },
+        "md_nve": {
+          "state": "completed",
+          "seconds": 14.687999999994645,
+          "frames": 7
+        },
+        "md_nvt": {
+          "state": "completed",
+          "seconds": 15.10899999999674,
+          "frames": 7
+        },
+        "conformer_search": {
+          "state": "completed",
+          "seconds": 36.921999999991385,
+          "frames": 64
+        },
+        "conformers_retained": [
+          {
+            "candidate": 0,
+            "energy": -2169.4137124411886,
+            "frame": 27,
+            "rank": 1
+          }
+        ],
+        "saddle_verification": {
+          "imaginary_modes": [
+            0
+          ],
+          "search_converged": true,
+          "verified_first_order_saddle": true
+        },
+        "irc_both": {
+          "state": "completed",
+          "frames": 19
+        }
+      }
+    },
+    {
+      "platform": "Windows x64",
+      "backend": "aimnet2",
+      "provenance": {
+        "model": {
+          "name": "aimnet2-wb97m-d3_0",
+          "backend": "aimnet2",
+          "elements": [
+            1,
+            5,
+            6,
+            7,
+            8,
+            9,
+            14,
+            15,
+            16,
+            17,
+            33,
+            34,
+            35,
+            53
+          ],
+          "domain": "Isolated organic/main-group molecules and clusters; no metals or implicit solvent; closed shell.",
+          "charge": "explicit",
+          "spin": "singlet",
+          "periodic": false,
+          "properties": [
+            "energy",
+            "forces",
+            "charges"
+          ],
+          "precision": [
+            "float32"
+          ],
+          "task": null,
+          "head": null,
+          "correction": "Official checkpoint metadata controls Coulomb and D3; additional corrections disabled",
+          "url": "https://storage.googleapis.com/aimnetcentral/aimnet2v2/AIMNet2/aimnet2_wb97m_d3_0.pt",
+          "sha256": "f0f7c054539ad3261bd36f9b11c56d12f87cb723e25bea7521755bbd3ec24e28"
+        },
+        "device": "cpu",
+        "precision": "float32",
+        "task": null,
+        "head": null,
+        "corrections": "Official checkpoint metadata controls Coulomb and D3; additional corrections disabled",
+        "software": {
+          "ase": "3.29.0",
+          "numpy": "2.4.3",
+          "scipy": "1.17.1",
+          "torch": "2.13.0",
+          "aimnet": "0.2.0",
+          "sella": "2.6.0",
+          "rdkit": "2026.3.6"
+        },
+        "python": "3.12.14",
+        "platform": "Windows-11-10.0.26200-SP0"
+      },
+      "results": {
+        "single_point": {
+          "state": "completed",
+          "seconds": 0.17200000000593718,
+          "frames": 1
+        },
+        "force_consistency": {
+          "error_eV_per_A": 0.00020681321620941162,
+          "tolerance": 0.002
+        },
+        "opt_BFGS": {
+          "state": "completed",
+          "seconds": 0.21900000001187436,
+          "frames": 5
+        },
+        "opt_LBFGS": {
+          "state": "completed",
+          "seconds": 0.875,
+          "frames": 5
+        },
+        "opt_FIRE": {
+          "state": "completed",
+          "seconds": 0.5779999999940628,
+          "frames": 16
+        },
+        "optimization_frequencies": {
+          "state": "completed",
+          "seconds": 0.20299999999406282,
+          "frames": 6
+        },
+        "frequencies": [
+          1594.0558568980027,
+          3789.891171663452,
+          3941.8407725612237
+        ],
+        "constrained": {
+          "state": "completed",
+          "seconds": 0.13999999999941792,
+          "frames": 3
+        },
+        "scan_1d": {
+          "state": "completed",
+          "seconds": 0.5630000000091968,
+          "frames": 13
+        },
+        "scan_2d": {
+          "state": "completed",
+          "seconds": 0.625,
+          "frames": 12
+        },
+        "transition_state": {
+          "state": "completed",
+          "seconds": 3.6410000000032596,
+          "frames": 5
+        },
+        "saddle_verification": {
+          "imaginary_modes": [
+            0
+          ],
+          "search_converged": true,
+          "verified_first_order_saddle": true
+        },
+        "irc_both": {
+          "state": "completed",
+          "seconds": 2.7339999999967404,
+          "frames": 19
+        },
+        "climbing_neb": {
+          "state": "completed",
+          "seconds": 11.702999999994063,
+          "frames": 105
+        },
+        "md_nve": {
+          "state": "completed",
+          "seconds": 1.187999999994645,
+          "frames": 7
+        },
+        "md_nvt": {
+          "state": "completed",
+          "seconds": 1.125,
+          "frames": 7
+        },
+        "conformer_search": {
+          "state": "completed",
+          "seconds": 2.812000000005355,
+          "frames": 67
+        },
+        "conformers_retained": [
+          {
+            "candidate": 0,
+            "energy": -2173.4579241052993,
+            "frame": 28,
+            "rank": 1
+          }
+        ]
+      }
+    }
+  ],
+  "tests": {
+    "python_gui_environment": {
+      "passed": 91,
+      "skipped": 1,
+      "skip_reason": "Sella absent from GUI-only environment"
+    },
+    "shared_algorithms_calculation_environment": {
+      "passed": 31,
+      "skipped": 0
+    },
+    "javascript_core": {
+      "passed": 20
+    }
+  },
+  "unavailable": [
+    "UMA gated weights",
+    "MACE-OFF23 licensed weights",
+    "CUDA hardware",
+    "macOS runtime",
+    "live Hugging Face account authentication"
+  ],
+  "windows_packaged_regression": {
+    "ok": true,
+    "frozen": true,
+    "platform": "Windows-11-10.0.26200-SP0",
+    "checks": [
+      "Qt WebEngine, WebChannel, SVG preview, and both local 3D views",
+      "Calculation import: gaussian-freq.log",
+      "Calculation import: orca6-opt.out",
+      "Calculation import: gaussian-td.log",
+      "Calculation import: orca6-adc2.out",
+      "Calculation import: gaussian-scan2d.log",
+      "ASE/Sella binary trajectory, saved energies, speed, Gaussian/ORCA input generation",
+      "Multi-document overlay, solid colors, rigid alignment and RMSD",
+      "Single-frame and multi-frame XYZ viewing",
+      "Bundled JavaScript RDKit/WASM SMILES to 3D, offline",
+      "Bundled Ketcher/Indigo 2D drawing, offline",
+      "Native RDKit ETKDG/MMFF 2D to 3D conversion",
+      "Figure bond edits, shared fog and extended element colors",
+      "MOL and transparent PNG figure export",
+      "Offline path-traced builder figure with fog and embedded BVH worker",
+      "Offline path-traced normal-mode WebM with bundled video encoder"
+    ]
+  },
+  "windows_packaged_mlip": {
+    "ok": true,
+    "frozen": true,
+    "checks": [
+      "Native MLIP setup, all job types, and packaged external worker sources",
+      "In-app managed environment installation from the frozen application",
+      "External environment probe and real AIMNet2 checkpoint/device check",
+      "Queued optimization \u2192 frequency child, Hartree result adapter, unavailable intensities, normal modes",
+      "Responsive desktop cancellation, persisted exact MD checkpoint, bounded trajectory page",
+      "History and interrupted-job recovery after desktop restart"
+    ]
+  }
+}

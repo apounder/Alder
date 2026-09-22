@@ -4,7 +4,7 @@ import re
 import numpy as np
 from ase.io.extxyz import key_val_str_to_dict, read_extxyz
 from ase.io.trajectory import Trajectory
-from ase.units import Hartree
+from ase.units import Hartree, fs
 
 from .data import Calculation, ELEMENTS, check_file
 
@@ -29,7 +29,7 @@ def _properties(comment, extended=False):
 
 def read_trajectory(path):
     path = check_file(path)
-    frames, energies, forces = [], [], []
+    frames, energies, forces, simulation_frames = [], [], [], []
     atomnos = None
     source = 'ASE / Sella trajectory' if path.suffix.lower() == '.traj' else 'XYZ trajectory'
     periodic = False
@@ -46,6 +46,15 @@ def read_trajectory(path):
                 raise ValueError('Every trajectory frame must contain the same elements in the same order. Open unrelated structures separately.')
             if len(frames) >= 100000 or (len(frames) + 1) * len(atomnos) > 5_000_000:
                 raise ValueError('Trajectory exceeds 100,000 frames or 5 million atom positions. Export a shorter or sampled trajectory.')
+            frame_input = dict(masses=atoms.get_masses().copy(), cell=atoms.cell.copy().array,
+                               pbc=atoms.pbc.copy(), ase_constraints=[c.todict() for c in atoms.constraints])
+            for key in ('charge', 'multiplicity', 'spin', 'mult'):
+                if key in atoms.info: frame_input[key] = atoms.info[key]
+            if atoms.has('momenta'):
+                frame_input['velocities'] = atoms.get_velocities() * fs
+            elif 'velocity' in atoms.arrays and atoms.info.get('velocity_unit') == 'angstrom/fs':
+                frame_input['velocities'] = atoms.arrays['velocity'].copy()
+            simulation_frames.append(frame_input)
             frames.append(points.copy())
             periodic |= bool(atoms.pbc.any())
             source = atoms.info.get('studio_source', source)
@@ -84,5 +93,5 @@ def read_trajectory(path):
     summary = {'Program': source, 'Geometries': str(len(frames)), 'Energy': 'Saved potential energy (displayed in Hartree)',
                'Termination': 'Not determined from trajectory'}
     metadata = {'package': source, 'energy_label': 'Potential energy', 'max_forces': forces,
-                'periodic': periodic, 'trajectory': True}
+                'periodic': periodic, 'trajectory': True, 'simulation_frames': simulation_frames}
     return Calculation(path.name, atomnos, np.asarray(frames), np.asarray(energies), metadata, summary, warnings=warnings)

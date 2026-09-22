@@ -1,0 +1,55 @@
+{
+  "ok": true,
+  "checks": [
+    "aimnet2: relocated Python, locked CPU dependencies and Sella import with networking denied",
+    "mace: relocated Python, locked CPU dependencies and Sella import with networking denied",
+    "uma: relocated Python, locked CPU dependencies and Sella import with networking denied",
+    "Repeated local setup reuses all three installed environments",
+    "Gated/licensed weights and credentials excluded"
+  ],
+  "models": {
+    "aimnet2-wb97m-d3_0": {
+      "sha256": "f0f7c054539ad3261bd36f9b11c56d12f87cb723e25bea7521755bbd3ec24e28",
+      "energy_eV": -2081.0461079801903,
+      "max_force_eV_A": 0.18616227805614471
+    },
+    "aimnet2-b973c-2025-d3_0": {
+      "sha256": "043ed5418a104e31f79462f8e5ebeca64a2d24422174f5d29f894d32271981b5",
+      "energy_eV": -2078.9051463576616,
+      "max_force_eV_A": 0.20684446394443512
+    },
+    "aimnet2-nse_0": {
+      "sha256": "b98b3449b2a3765de6a188edff9344a38cc72df75f9d9bf68f4b898a253c5864",
+      "energy_eV": -2081.03953858446,
+      "max_force_eV_A": 0.13031402230262756
+    },
+    "aimnet2-rxn_0": {
+      "sha256": "ce8bc2a4cc6fcb5ebaa1bc8897fcd75104e5a00fe86e9d5fc6a020d572174894",
+      "energy_eV": -0.5888737949356795,
+      "max_force_eV_A": 0.10795155167579651
+    },
+    "MACE-ANI-CC": {
+      "sha256": "7ad311c590b7df90a1d4aa34d997a8c419fdb7ae777296350869614e9e07b69d",
+      "energy_eV": -2078.504638671875,
+      "max_force_eV_A": 0.16395744681358337
+    }
+  },
+  "cleanup_recovery": "Calculation and environment checks passed on the initial run. Its temporary-folder cleanup exceeded Windows MAX_PATH. The revised extended-path cleanup passed a >350-character-path test and removed the complete original temporary environment tree.",
+  "gui_regression": {
+    "windows": {
+      "passed": 98,
+      "skipped": 1
+    },
+    "linux": {
+      "passed": 98,
+      "skipped": 1
+    },
+    "skip": "Sella is not installed in the GUI-only test interpreter; all three calculation environments passed the Sella import check."
+  },
+  "light_controls": "Native Windows and Linux checks started with a dark palette: editable, read-only and disabled text fields and checked/unchecked/disabled indicators stayed light and readable.",
+  "limitations": [
+    "UMA weights and MACE-OFF23 excluded; no real UMA energy/force check.",
+    "CPU only; no CUDA validation.",
+    "The new offline edition targets Windows x64, tested through Windows ARM64 x64 emulation."
+  ]
+}

@@ -9,7 +9,7 @@ import traceback
 
 def main():
     multiprocessing.freeze_support()
-    smoke = sys.argv[1:2] == ['--smoke-test']
+    smoke = sys.argv[1:2] in (['--smoke-test'], ['--mlip-smoke-test'])
     log_path = None
     if sys.platform == 'win32':
         import ctypes
@@ -26,6 +26,9 @@ def main():
         sys.stdout = sys.stderr
         print(f'\nMolecule Studio started {datetime.now().isoformat()}', file=sys.stderr)
     try:
+        if sys.argv[1:2] == ['--mlip-smoke-test']:
+            from .mlip_smoke import run
+            return run(Path(sys.argv[2]), Path(sys.argv[3]) if len(sys.argv)>3 else None, Path(sys.argv[4]) if len(sys.argv)>4 else None)
         if smoke:
             from .smoke import run
             return run(Path(sys.argv[2]), Path(sys.argv[3]))

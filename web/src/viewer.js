@@ -342,6 +342,7 @@ export class MolecularView {
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
     this.selection = [];
+    this.measurementCount = 0;
     this.hoverIndex = null;
   }
   pick(event) {
@@ -393,7 +394,8 @@ export class MolecularView {
     const ids = this.selection.filter(
         (i) => this.model.atoms[i] && this.visible(i),
       ),
-      m = measure(this.model.atoms, ids),
+      m = ids.length === this.selection.length && (!this.measurementCount || ids.length === this.measurementCount)
+        ? measure(this.model.atoms, ids) : null,
       text = measurementText(m);
     this.measureLine.visible = !!m;
     if (m) {
@@ -426,6 +428,7 @@ export class MolecularView {
     }
     if (this.measureLabel) this.measureLabel.visible = !!m;
     this.onMeasurement?.(m, text);
+    this.reportMeasurement?.(m, text, ids);
   }
   showGhost(position, parent, el) {
     if (position || this.ghost.visible) this.invalidate();

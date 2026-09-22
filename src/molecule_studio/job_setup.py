@@ -46,7 +46,7 @@ def scan_coordinates(text, coords):
             n1, n2 = np.cross(a,b), np.cross(b,c)
             if min(np.linalg.norm(n1),np.linalg.norm(n2)) < 1e-12:
                 raise ValueError('Scan dihedral is undefined for collinear atoms.')
-            start = np.degrees(np.arctan2(np.cross(n1,n2) @ (b/np.linalg.norm(b)), n1@n2))
+            start = (np.degrees(np.arctan2(np.cross(n1,n2) @ (b/np.linalg.norm(b)), n1@n2)) + 180) % 360 - 180
         end = start+increments*step
         if (count == 2 and min(start,end)<=0) or (count == 3 and not 0<min(start,end)<=max(start,end)<180):
             raise ValueError('Scan distances must stay positive; angles must stay between 0 and 180 degrees.')
