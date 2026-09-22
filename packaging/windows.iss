@@ -3,6 +3,9 @@
   #error AppVersion must be supplied by scripts/build_windows.py
 #endif
 #define AppName "Molecule Studio"
+#ifndef BundleDir
+  #define BundleDir "..\dist\MoleculeStudio"
+#endif
 
 [Setup]
 AppId={{7841FB2F-67E9-4B35-9023-794282893420}
@@ -30,7 +33,7 @@ RestartApplications=no
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Shortcuts:"; Flags: unchecked
 
 [Files]
-Source: "..\dist\MoleculeStudio\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#BundleDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\MoleculeStudio.exe"; WorkingDir: "{app}"

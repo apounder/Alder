@@ -34,6 +34,7 @@ export class MolecularView {
     this.scene.add(light);
     this.sphereGeometry = new THREE.SphereGeometry(1, 48, 32);
     this.cylinderGeometry = new THREE.CylinderGeometry(1, 1, 1, 20);
+    this.coneGeometry = new THREE.ConeGeometry(1, 1, 24);
     this.style = {
       representation: "ball",
       palette: "cpk",
@@ -130,7 +131,7 @@ export class MolecularView {
   syncModel(model, { full = true, changed = [] } = {}) {
     this.model = model;
     if (full) {
-      for (const mesh of [this.atomMesh, this.bondMesh])
+      for (const mesh of [this.atomMesh, this.bondMesh, this.arrowMesh])
         if (mesh) {
           this.scene.remove(mesh);
           mesh.material.dispose();
@@ -143,9 +144,15 @@ export class MolecularView {
       );
       this.scene.add(this.atomMesh);
       this.halves = [];
+      this.arrows = [];
       model.bonds.forEach((b, index) => {
+        if(b.kind==='ts') {
+          for(let i=0;i<8;i++)this.halves.push({bond:index,offset:0,side:i<4?0:1,start:i/8,end:(i+.55)/8});
+          return;
+        }
+        if(b.kind==='dative')this.arrows.push({bond:index});
         const offsets =
-          b.order === 2
+          !b.kind && b.order === 2
             ? [-0.16, 0.16]
             : b.order === 3
               ? [-0.22, 0, 0.22]
@@ -160,6 +167,8 @@ export class MolecularView {
         this.halves.length,
       );
       this.scene.add(this.bondMesh);
+      this.arrowMesh=new THREE.InstancedMesh(this.coneGeometry,this.material(),this.arrows.length);
+      this.scene.add(this.arrowMesh);
       changed = model.atoms.map((_, i) => i);
       this.rebuildLabels();
     }
@@ -185,9 +194,11 @@ export class MolecularView {
         length = dir.length();
       dir.normalize();
       const axis = h.offset ? this.bondAxis(dir, b) : up;
+      const start=h.start??(h.side?.5:0),end=h.end??(h.side?1:.5);
+      const usable=b.kind==='dative'?Math.max(0,length-this.radius(model.atoms[b.b])-.28):length;
       const pos = pa
         .clone()
-        .lerp(pb, h.side ? 0.75 : 0.25)
+        .addScaledVector(dir,usable*(start+end)/2)
         .addScaledVector(axis, h.offset);
       q.setFromUnitVectors(
         new THREE.Vector3(0, 1, 0),
@@ -199,14 +210,23 @@ export class MolecularView {
           this.style.representation !== "space" &&
           length > 1e-8,
         r = shown ? this.bondRadius() : 0;
-      matrix.compose(pos, q, scale.set(r, length / 2, r));
+      matrix.compose(pos, q, scale.set(b.kind==='ts'?r*.65:r, usable*(end-start), b.kind==='ts'?r*.65:r));
       this.bondMesh.setMatrixAt(k, matrix);
       this.bondMesh.setColorAt(
         k,
         color.set(this.bondColor(model.atoms[h.side ? b.b : b.a])),
       );
     }
-    for (const mesh of [this.atomMesh, this.bondMesh]) {
+    this.arrows.forEach((h,k)=>{
+      const b=model.bonds[h.bond];if(!full&&!dirty.has(b.a)&&!dirty.has(b.b))return;
+      const a=V(model.atoms[b.a]),dir=V(model.atoms[b.b]).sub(a),length=dir.length();dir.normalize();
+      const tip=Math.max(0,length-this.radius(model.atoms[b.b])),height=Math.min(.45,tip*.5);
+      const shown=this.visible(b.a)&&this.visible(b.b)&&this.style.representation!=='space'&&length>1e-8;
+      q.setFromUnitVectors(up,length>1e-8?dir:up);
+      matrix.compose(a.addScaledVector(dir,tip-height/2),q,scale.set(shown?this.bondRadius()*2.4:0,height,shown?this.bondRadius()*2.4:0));
+      this.arrowMesh.setMatrixAt(k,matrix);this.arrowMesh.setColorAt(k,color.set(this.bondColor(model.atoms[b.b])));
+    });
+    for (const mesh of [this.atomMesh, this.bondMesh, this.arrowMesh]) {
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
       mesh.computeBoundingSphere();
@@ -439,12 +459,13 @@ export class MolecularView {
       if (
         o.geometry &&
         o.geometry !== this.sphereGeometry &&
-        o.geometry !== this.cylinderGeometry
+        o.geometry !== this.cylinderGeometry && o.geometry !== this.coneGeometry
       )
         o.geometry.dispose();
     });
     this.sphereGeometry.dispose();
     this.cylinderGeometry.dispose();
+    this.coneGeometry.dispose();
     this.environment.dispose();
     this.renderer.dispose();
   }

@@ -1,10 +1,18 @@
 // Calculation and figure adapter. All pixels are rendered by the same StudioView as Build.
 import * as THREE from 'three';
 import {StudioView} from './studio-view.js';
-import {parseXYZ,validateModel} from './chemistry.js';
+import {renderExport,cancelExport} from './render-export.js';
+import {parseXYZ,validateModel,inferBonds} from './chemistry.js';
 let viewer,bridge,volume=null,colorVolume=null,cubeVisible=false,shapes=[],vdwSurface=null;
 let surfaceOptions={isoval:0.03,opacity:0.75,signed:true,mode:'orbital',min:-0.05,max:0.05,scale:1,gradient:'esp',legend:true};
-let commandQueue=Promise.resolve(),vibration=null;
+let commandQueue=Promise.resolve(),vibration=null,annotationKey=null,comparison=false,annotations=new Map();
+const documentAnnotations=new Map();
+const pairKey=(a,b)=>[Math.min(a,b),Math.max(a,b)].join(':');
+function applyAnnotations(model, edits=annotations) {
+  model.bonds=model.bonds.filter(b=>!edits.has(pairKey(b.a,b.b)));
+  for(const b of edits.values())if(b.kind!=='remove'&&b.a<model.atoms.length&&b.b<model.atoms.length)model.bonds.push({...b});
+  return model;
+}
 window.sceneState={atoms:0,surfaces:0,mapped:false,ready:false,error:null,exportSize:null};
 function palette(options) {
   return options.gradient === 'nci' ? ['#245cdd','#52c85d','#d93936'] : ['#de4237','#fafafa','#3262d8'];
@@ -141,12 +149,34 @@ async function surfaces() {
   window.sceneState.surfaces=shapes.length;window.sceneState.mapped=!!(cubeVisible&&colorVolume);
   updateLegend();viewer.invalidate();
 }
-function exportFigure(cmd) {
-  const canvas=viewer.capture(cmd),samples=cmd.samples||1;
-  window.sceneState.exportRenderSize=[canvas.width*samples,canvas.height*samples];
-  window.sceneState.exportSize=[canvas.width,canvas.height];
-  if(cubeVisible&&colorVolume&&surfaceOptions.legend)legend(canvas,surfaceOptions,cmd.transparent);
-  bridge.imageReady(canvas.toDataURL('image/png'));
+async function exportFigure(cmd) {
+  const original=structuredClone(viewer.model),selection=[...viewer.selection],savedVibration=vibration;
+  const visible=shapes.map(s=>s.visible);
+  if(cmd.video){vibration=null;shapes.forEach(s=>s.visible=false);}
+  try {
+    await renderExport(viewer,cmd,bridge,{
+      frame:i=>{
+        const video=cmd.video,model=structuredClone(original);
+        let points;
+        if(video.kind==='vibration') {
+          const shift=Math.sin(2*Math.PI*i/video.framesPerCycle)*video.amplitude;
+          points=video.base.map((p,j)=>p.map((v,k)=>v+video.vectors[j][k]*shift));
+        } else points=video.frames[Math.min(video.frames.length-1,Math.floor(i/video.hold))];
+        if(points.length!==model.atoms.length)throw Error('Animation atom count does not match the structure.');
+        model.atoms.forEach((a,j)=>{[a.x,a.y,a.z]=points[j];});
+        if(video.kind!=='vibration')model.bonds=inferBonds(model.atoms);
+        applyAnnotations(model);
+        const same=JSON.stringify(model.bonds)===JSON.stringify(viewer.model.bonds);
+        viewer.syncModel(model,{full:!same,changed:model.atoms.map((_,j)=>j)});
+      },
+      decorate:canvas=>{
+        window.sceneState.exportSize=[canvas.width,canvas.height];
+        window.sceneState.exportRenderSize=[canvas.width*(cmd.engine==='raytrace'?1:cmd.samples||1),canvas.height*(cmd.engine==='raytrace'?1:cmd.samples||1)];
+        if(!cmd.video&&cubeVisible&&colorVolume&&surfaceOptions.legend)legend(canvas,surfaceOptions,cmd.transparent);
+      },
+      restore:()=>{viewer.syncModel(original);viewer.updateOverlays(selection,null);vibration=savedVibration;shapes.forEach((s,i)=>s.visible=visible[i]);}
+    });
+  } finally {viewer.invalidate();}
 }
 function poseVibration() {
   if(!vibration)return;
@@ -172,18 +202,67 @@ async function startVibration(cmd) {
   if(vectors.length!==model.atoms.length||vectors.some(v=>v.length!==3||v.some(x=>!Number.isFinite(x))))throw Error('Invalid vibrational displacement vectors');
   const max=Math.max(...vectors.map(v=>Math.hypot(...v)),1e-12);
   stopVibration();cubeVisible=false;await surfaces();
-  viewer.syncModel(model);viewer.updateOverlays([],null);
+  viewer.syncModel(applyAnnotations(model));viewer.updateOverlays([],null);
   vibration={mode:cmd.mode,base:model.atoms.map(a=>[a.x,a.y,a.z]),vectors:vectors.map(v=>v.map(x=>x/max)),phase:0,amplitude:.3,rate:.7,playing:false};
   window.sceneState.atoms=model.atoms.length;
   vibrationSettings(cmd);
 }
 async function handleCommand(cmd) {
+  if(cmd.type==='renameDocument') {
+    if(documentAnnotations.has(cmd.key))documentAnnotations.set(cmd.newKey,documentAnnotations.get(cmd.key));
+    documentAnnotations.delete(cmd.key);
+    if(annotationKey===cmd.key)annotationKey=cmd.newKey;
+    return;
+  }
+  if(cmd.type==='copyToBuilder') {
+    const model=applyAnnotations(parseXYZ(cmd.xyz,cmd.name),documentAnnotations.get(cmd.annotationKey)||new Map());
+    bridge.copyReady(JSON.stringify(model));return;
+  }
+  if(cmd.type==='forgetDocument') {
+    documentAnnotations.delete(cmd.key);
+    if(annotationKey===cmd.key){annotationKey=null;annotations=new Map();}
+    return;
+  }
+  if(cmd.type==='comparison') {
+    stopVibration();comparison=true;cubeVisible=false;await surfaces();
+    const model={name:'Structure comparison',atoms:[],bonds:[]};
+    for(const [index,structure] of cmd.structures.entries()) {
+      const part=applyAnnotations(parseXYZ(structure.xyz),documentAnnotations.get(structure.annotationKey)||new Map()),offset=model.atoms.length;
+      model.atoms.push(...part.atoms.map(a=>({...a,structureColor:structure.color,structureIndex:index})));
+      model.bonds.push(...part.bonds.map(b=>({...b,a:b.a+offset,b:b.b+offset})));
+    }
+    viewer.syncModel(model);viewer.updateOverlays([],null);
+    window.sceneState.atoms=model.atoms.length;window.sceneState.structures=cmd.structures.length;
+    window.sceneState.error=null;
+    document.getElementById('hint').hidden=!!model.atoms.length;
+    if(cmd.fit)viewer.fit();return;
+  }
+  if(cmd.type==='annotation') {
+    if(comparison)throw Error('Add bond annotations in the individual calculation view.');
+    const [a,b]=viewer.selection;
+    if(viewer.selection.length!==2)throw Error('Select two atoms first; select the donor first for a dative arrow.');
+    if(!['single','double','triple','dative','ts','remove'].includes(cmd.kind))throw Error('Unknown bond style.');
+    const order={single:1,double:2,triple:3}[cmd.kind];
+    annotations.set(pairKey(a,b),{a,b,order:order||1,...(order?{}:{kind:cmd.kind})});
+    viewer.syncModel(applyAnnotations(viewer.model));viewer.updateOverlays();return;
+  }
+  if(cmd.type==='clearAnnotations'){
+    if(comparison)throw Error('Edit bond annotations in the individual calculation view.');
+    annotations.clear();viewer.model.bonds=inferBonds(viewer.model.atoms);viewer.syncModel(viewer.model);return;
+  }
   if(cmd.type==='vibration'){await startVibration(cmd);return;}
   if(cmd.type==='vibrationSettings'){vibrationSettings(cmd);return;}
   if(cmd.type==='vibrationStop'){stopVibration();return;}
   if(cmd.type==='geometry') {
+    comparison=false;window.sceneState.structures=1;
     stopVibration();
+    if(cmd.annotationKey!==undefined&&cmd.annotationKey!==annotationKey){
+      annotationKey=cmd.annotationKey;
+      if(!documentAnnotations.has(annotationKey))documentAnnotations.set(annotationKey,new Map());
+      annotations=documentAnnotations.get(annotationKey);
+    }
     const model=cmd.model?validateModel(cmd.model):cmd.xyz?.startsWith('0\n')?{atoms:[],bonds:[]}:parseXYZ(cmd.xyz);
+    applyAnnotations(model);
     // Reuse GPU buffers for trajectory frames with unchanged topology.
     const same=model.atoms.length===viewer.model.atoms.length && model.atoms.every((a,i)=>a.el===viewer.model.atoms[i].el) && JSON.stringify(model.bonds)===JSON.stringify(viewer.model.bonds);
     viewer.syncModel(model,{full:!same,changed:model.atoms.map((_,i)=>i)});
@@ -196,17 +275,20 @@ async function handleCommand(cmd) {
     colorVolume=cmd.mapping?new $3Dmol.VolumeData(cmd.mapping,'cube'):null;
     surfaceOptions=cmd.options||surfaceOptions;cubeVisible=!!cmd.text&&cmd.visible!==false;await surfaces();
   } else if(cmd.type==='surface') {surfaceOptions=cmd.options;cubeVisible=cmd.visible;await surfaces();}
+  else if(cmd.type==='fog')viewer.setFog(cmd);
+  else if(cmd.type==='fogPick')viewer.setDepthCuePick(cmd.enabled);
   else if(cmd.type==='style')viewer.setStyle(cmd);
   else if(cmd.type==='appearance')viewer.setAppearance(cmd);
   else if(cmd.type==='fit')viewer.fit();
   else if(cmd.type==='visibility')viewer.setActive(cmd.visible);
-  else if(cmd.type==='export')exportFigure(cmd);
+  else if(cmd.type==='export')await exportFigure(cmd);
   window.sceneState.error=null;
 }
 new QWebChannel(qt.webChannelTransport,channel=>{
   bridge=channel.objects.bridge;
   try {
     viewer=new StudioView(document.getElementById('viewer'));viewer.syncModel({atoms:[],bonds:[]});viewer.fit();
+    viewer.onFogChange=state=>bridge.fogChanged(JSON.stringify(state));
     viewer.isAnimating=()=>!!vibration?.playing;
     viewer.onFrame=(now,delta)=>{if(vibration?.playing){vibration.phase=(vibration.phase+delta*vibration.rate*2*Math.PI)%(2*Math.PI);poseVibration();}};
     window.calculationApp={view:viewer,get vibration(){return vibration;},get surfaceOptions(){return surfaceOptions;},get shapes(){return shapes;},get colorVolume(){return colorVolume;},get vdwSurface(){return vdwSurface;},sampledField,gradient};
@@ -223,7 +305,7 @@ new QWebChannel(qt.webChannelTransport,channel=>{
       viewer.updateOverlays(ids,hit);
     });
     window.addEventListener('keydown',e=>{if(e.key==='Escape')viewer.updateOverlays([],null);});
-    bridge.command.connect(json=>{commandQueue=commandQueue.then(()=>handleCommand(JSON.parse(json))).catch(error=>{window.sceneState.error=String(error);bridge.reportError(String(error));});});
+    bridge.command.connect(json=>{if(JSON.parse(json).type==='exportCancel'){cancelExport(viewer);return;}commandQueue=commandQueue.then(()=>handleCommand(JSON.parse(json))).catch(error=>{window.sceneState.error=String(error);bridge.reportError(String(error));});});
     window.sceneState.ready=true;bridge.ready();
   } catch(error){bridge.reportError(String(error));}
 });

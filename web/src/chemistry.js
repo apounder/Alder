@@ -1,4 +1,7 @@
 export const CPK = {
+  // Familiar CPK main-group colors, with muted metal families for the rest of
+  // the periodic table. Rowan likewise uses a CPK variant; these are Studio's
+  // own shades, not an assertion of identical vendor color settings.
   H: "#FFFFFF",
   C: "#909090",
   N: "#3050F8",
@@ -9,6 +12,28 @@ export const CPK = {
   I: "#940094",
   S: "#FFFF30",
   P: "#FF8000",
+  He: "#BCE9EF", Li: "#B69AD8", Be: "#A0D4B8", B: "#D99A84", Ne: "#8ACBD8",
+  Na: "#9A7AD0", Mg: "#64B9A9", Al: "#86AEBC", Si: "#B8AA76", Ar: "#7BB8CA",
+  K: "#8063B8", Ca: "#50A99B", Sc: "#A4B5C1", Ti: "#829CAE", V: "#71899E",
+  Cr: "#6D91A5", Mn: "#9B789D", Fe: "#BE805D", Co: "#677EAE", Ni: "#67A08B",
+  Cu: "#C18C62", Zn: "#779CB5", Ga: "#9C94B5", Ge: "#A69070", As: "#B77AAC",
+  Se: "#C69927", Kr: "#68A4B8", Rb: "#7255A3", Sr: "#43958B", Y: "#AFBED0",
+  Zr: "#92AABE", Nb: "#789BB8", Mo: "#638DA8", Tc: "#507B95", Ru: "#486D84",
+  Rh: "#548C9E", Pd: "#76A7AD", Ag: "#9BB6BE", Cd: "#9AAFCB", In: "#AD95B9",
+  Sn: "#879DAF", Sb: "#AD8297", Te: "#A78435", Xe: "#598EA9", Cs: "#65468F",
+  Ba: "#36817C", La: "#77B9BA", Ce: "#69B1B0", Pr: "#5FAAA5", Nd: "#55A29A",
+  Pm: "#4C9A8F", Sm: "#449284", Eu: "#3D8A79", Gd: "#3A8373", Tb: "#377B6D",
+  Dy: "#347366", Ho: "#326B62", Er: "#30635D", Tm: "#315B59", Yb: "#345454",
+  Lu: "#374C4F", Hf: "#A4B4CB", Ta: "#839EC0", W: "#678BAF", Re: "#517A9C",
+  Os: "#466A86", Ir: "#56698B", Pt: "#859BA4", Au: "#C5A148", Hg: "#889DA3",
+  Tl: "#A18795", Pb: "#818CA3", Bi: "#A8788D", Po: "#78642B", At: "#744D7F",
+  Rn: "#4C7D98", Fr: "#583B7A", Ra: "#2B6E70", Ac: "#CAA8C4", Th: "#C198BC",
+  Pa: "#B98AB3", U: "#A985C3", Np: "#A076B6", Pu: "#966EAB", Am: "#8C669F",
+  Cm: "#825E93", Bk: "#785786", Cf: "#6E507A", Es: "#654A6E", Fm: "#5C4463",
+  Md: "#533E59", No: "#4A394F", Lr: "#423346", Rf: "#95AFC5", Db: "#809CB9",
+  Sg: "#718BAD", Bh: "#667B9F", Hs: "#606D91", Mt: "#655F84", Ds: "#765D80",
+  Rg: "#AD9165", Cn: "#859D9A", Nh: "#AA8B98", Fl: "#8E8DA8", Mc: "#A4768B",
+  Lv: "#8F7751", Ts: "#795F8D", Og: "#8BAEB8",
 };
 export const dispR = {
   H: 0.31,
@@ -125,7 +150,8 @@ export function validateModel(model) {
     const key = [b.a, b.b].sort((a, b) => a - b).join(":");
     if (pairs.has(key)) throw Error("Duplicate bond.");
     pairs.add(key);
-    return { a: b.a, b: b.b, order: b.order };
+    if (b.kind && !['dative','ts'].includes(b.kind)) throw Error('Unknown bond style.');
+    return { a: b.a, b: b.b, order: b.kind ? 1 : b.order, ...(b.kind ? {kind:b.kind} : {}) };
   });
   return {
     name: String(model.name || "Untitled molecule").slice(0, 150),
@@ -171,6 +197,13 @@ export function parseMOL(text, name) {
         if (atoms[parts[i] - 1]) atoms[parts[i] - 1][{CHG:'charge',ISO:'isotope',RAD:'radical'}[field]] = field==='RAD' ? (parts[i+1]===2?1:2) : parts[i + 1];
       }
     }
+  }
+  for(const b of bonds)if(b.order===9){b.kind='dative';b.order=1;}
+  // Studio annotations use an explicitly tagged extension, not a chemical bond order.
+  for(const line of lines) if(line.startsWith('M  STB ')) {
+    const [, , index, kind] = line.trim().split(/\s+/);
+    if(!bonds[Number(index)-1] || !['dative','ts'].includes(kind)) throw Error('Invalid Studio bond annotation.');
+    Object.assign(bonds[Number(index)-1],{kind,order:1});
   }
   return validateModel({ name: name || lines[0]?.trim(), atoms, bonds });
 }

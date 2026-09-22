@@ -34,6 +34,16 @@ jobs:
         run: python -m pip install -r packaging/windows-requirements.txt ".[dev]"
       - name: Check parsers and native chemistry
         run: python -m pytest -q
+      - name: Check UV–Vis controls and exports
+        run: python tests/excited_smoke.py
+      - name: Check IRC and scan controls
+        run: python tests/paths_smoke.py
+      - name: Check comparisons, trajectory import, and input setup
+        run: python tests/workspace_smoke.py
+      - name: Check ray tracing and decoded movie exports
+        run: python tests/raytrace_smoke.py
+      - name: Check figure bonds, fog gestures, and XYZ viewing
+        run: python tests/figure_smoke.py
       - name: Build and check standalone application
         run: python scripts/build_windows.py
       - name: Check installer, installed application, and uninstall

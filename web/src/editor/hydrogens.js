@@ -10,7 +10,7 @@ export function removeAtoms(model, ids) {
 }
 function hydrogenDirections(model,i,others,count) {
   const a=model.atoms[i],p=point(a),axes=others.map(j=>point(model.atoms[j]).sub(p).normalize());
-  const orders=model.bonds.filter(b=>b.a===i||b.b===i).map(b=>b.order);
+  const orders=model.bonds.filter(b=>!b.kind&&(b.a===i||b.b===i)).map(b=>b.order);
   const linear=orders.includes(3)||orders.filter(o=>o===2).length===2;
   const planar=orders.some(o=>o>1);
   if(!axes.length) {
@@ -38,7 +38,7 @@ function hydrogenDirections(model,i,others,count) {
 export function adjustHydrogens(model, selection=[], centers=null, {add=true}={}) {
   const allowed=centers===null ? null : new Set(centers);
   const neighbors=model.atoms.map(()=>[]);
-  model.bonds.forEach(b=>{neighbors[b.a].push([b.b,b.order]);neighbors[b.b].push([b.a,b.order]);});
+  model.bonds.filter(b=>!b.kind).forEach(b=>{neighbors[b.a].push([b.b,b.order]);neighbors[b.b].push([b.a,b.order]);});
   const remove=[],changed=new Set();
   model.atoms.forEach((a,i)=>{
     if(allowed&&!allowed.has(i))return;
@@ -53,7 +53,7 @@ export function adjustHydrogens(model, selection=[], centers=null, {add=true}={}
   selection=selection.filter(i=>map.has(i)).map(i=>map.get(i));
   const changedCenters=[...changed].map(i=>map.get(i));
   for(const i of changedCenters) {
-    const a=model.atoms[i],ns=model.bonds.filter(b=>b.a===i||b.b===i).map(b=>[b.a===i?b.b:b.a,b.order]);
+    const a=model.atoms[i],ns=model.bonds.filter(b=>!b.kind&&(b.a===i||b.b===i)).map(b=>[b.a===i?b.b:b.a,b.order]);
     const hs=ns.filter(([j,o])=>model.atoms[j].el==='H'&&o===1&&model.bonds.filter(b=>b.a===j||b.b===j).length===1).map(([j])=>j);
     const others=ns.filter(([j])=>!hs.includes(j));
     const needed=Math.max(0,Math.floor(maxValence[a.el]-others.reduce((s,[,o])=>s+(o===4?1.5:o),0)));

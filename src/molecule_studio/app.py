@@ -19,16 +19,26 @@ from .data import Calculation, read_calculation, read_cube, register_cube, valid
 from .ui import build_ui, configure_app, MODES
 from .builder import BuilderMixin
 from .results import ResultsMixin
+from .paths import attach_irc_trajectory
+from .render_export import ExportMixin, ExportBridge
+from .data import check_file
+from .trajectory import read_trajectory
+from .comparison import ComparisonMixin
 
 ASSETS = Path(__file__).parent / "assets"
 UNITS = {"kcal/mol": 627.509474, "kJ/mol": 2625.499639, "Eh": 1.0}
 
 
-class Bridge(QObject):
+class Bridge(ExportBridge):
     command = Signal(str)
     initialized = Signal()
     error = Signal(str)
     image = Signal(str)
+    copied = Signal(str)
+
+    @Slot(str)
+    def copyReady(self, model):
+        self.copied.emit(model)
 
     @Slot()
     def ready(self):
@@ -49,18 +59,25 @@ class LoadSignals(QObject):
 
 
 class LoadFile(QRunnable):
-    def __init__(self, path, calculation):
+    def __init__(self, path, calculation, trajectory=False, compare=False):
         super().__init__()
         self.path, self.calculation = path, calculation
+        self.trajectory = trajectory
+        self.compare = compare
         self.signals = LoadSignals()
 
     def run(self):
         try:
-            if self.path.suffix.lower() in {".cube", ".cub"}:
+            if self.trajectory:
+                result = ('attached', attach_irc_trajectory(self.calculation, check_file(self.path)), None)
+            elif self.path.suffix.lower() in {".cube", ".cub"}:
                 cube = read_cube(self.path)
                 registration = register_cube(self.calculation, cube) if self.calculation else None
                 result = ("cube", cube, registration)
-            elif self.path.suffix.lower() in {".xyz", ".mol", ".sdf", ".pdb"}:
+            elif self.path.suffix.lower() in {'.xyz', '.extxyz', '.traj'}:
+                data = read_trajectory(self.path)
+                result = ('calculation', data, None)
+            elif self.path.suffix.lower() in {".mol", ".sdf", ".pdb"}:
                 if self.path.stat().st_size > 20 * 1024 * 1024:
                     raise ValueError("Structure files are limited to 20 MB.")
                 result = ("structure", (self.path.name, self.path.read_text(encoding="utf-8")), None)
@@ -71,7 +88,7 @@ class LoadFile(QRunnable):
             self.signals.failed.emit(str(error) or type(error).__name__)
 
 
-class Window(ResultsMixin, BuilderMixin, QMainWindow):
+class Window(ComparisonMixin, ExportMixin, ResultsMixin, BuilderMixin, QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Molecule Studio")
@@ -89,6 +106,7 @@ class Window(ResultsMixin, BuilderMixin, QMainWindow):
         self.renderer_ready = False
         self.busy = False
         self.pending_files = []
+        self.load_as_comparison = False
         self.image_path = None
         self.image_dpi = 300
         self.exporting = False
@@ -126,22 +144,23 @@ class Window(ResultsMixin, BuilderMixin, QMainWindow):
 
     def choose_files(self):
         paths, _ = QFileDialog.getOpenFileNames(self, "Open calculation, cube, or structure", "",
-            "Molecular files (*.log *.out *.cube *.cub *.xyz *.mol *.sdf *.pdb);;All files (*)")
+            "Molecular files (*.log *.out *.cube *.cub *.xyz *.extxyz *.traj *.mol *.sdf *.pdb);;All files (*)")
         self.open_paths([Path(p) for p in paths])
 
-    def open_paths(self, paths):
+    def open_paths(self, paths, compare=False):
         if self.busy:
             self.statusBar().showMessage("A file is still loading. Please wait before opening another.")
             return
-        structures = [p for p in paths if p.suffix.lower() in {".xyz", ".mol", ".sdf", ".pdb"}]
+        structures = [p for p in paths if p.suffix.lower() in {".mol", ".sdf", ".pdb"}]
         if structures and len(paths) > 1:
             QMessageBox.information(self, "Open structure", "Import one structure at a time. Calculation and cube files can be opened together separately.")
             return
         outputs = [p for p in paths if p.suffix.lower() not in {".cube", ".cub"}]
         cubes = [p for p in paths if p.suffix.lower() in {".cube", ".cub"}]
-        if len(outputs) > 1 or len(cubes) + (0 if outputs else len(self.cubes)) > 8:
-            QMessageBox.information(self, "Open files", "Open one calculation and up to eight cube fields. You can drop them together.")
+        if len(cubes) + (0 if outputs else len(self.cubes)) > 8 or (len(outputs) > 1 and cubes):
+            QMessageBox.information(self, "Open files", "Open multiple outputs together, or one calculation with up to eight cube fields. Load cubes for the active calculation separately when comparing outputs.")
             return
+        self.load_as_comparison = compare or len(outputs) > 1
         self.pending_files = outputs + cubes
         self.load_next()
 
@@ -149,13 +168,32 @@ class Window(ResultsMixin, BuilderMixin, QMainWindow):
         if not self.pending_files:
             self.busy = False
             self.open_button.setEnabled(True)
+            self.calculation_picker.setEnabled(True)
+            if self.load_as_comparison:
+                self.load_as_comparison = False
+                self.inspector.setCurrentIndex(self.compare_tab)
+                self.show_comparison()
             return
         path = self.pending_files.pop(0)
         self.busy = True
         self.open_button.setEnabled(False)
+        self.calculation_picker.setEnabled(False)
         self.play.setChecked(False)
         self.statusBar().showMessage(f"Reading {path.name}…")
-        self.worker = LoadFile(path, self.calculation)
+        self.worker = LoadFile(path, self.calculation, compare=self.load_as_comparison or
+                               any(p.suffix.lower() in {'.cub','.cube'} for p in self.pending_files))
+        self.worker.signals.finished.connect(self.loaded)
+        self.worker.signals.failed.connect(self.load_failed)
+        self.pool.start(self.worker)
+
+    def attach_trajectory(self, path):
+        if self.busy or self.calculation is None:
+            return
+        self.busy = True
+        self.open_button.setEnabled(False)
+        self.play.setChecked(False)
+        self.statusBar().showMessage('Reading IRC trajectory…')
+        self.worker = LoadFile(Path(path), self.calculation, trajectory=True)
         self.worker.signals.finished.connect(self.loaded)
         self.worker.signals.failed.connect(self.load_failed)
         self.pool.start(self.worker)
@@ -178,28 +216,13 @@ class Window(ResultsMixin, BuilderMixin, QMainWindow):
             self.builder_command(type="load", name=name, text=text)
             self.load_next()
             return
-        if kind == "calculation":
-            self.stop_vibration(restore=False)
-            self.inspector.setCurrentIndex(0)
-            self.studio_tab_changed(0)
-            self.clear_cube()
-            self.calculation = data
-            self.display_coords = None
-            self.filename.setText(data.name)
-            self.details.setText("\n".join(f"{k}: {v}" for k, v in data.summary.items()))
-            self.warning.setText("\n".join(data.warnings))
-            self.warning.setVisible(bool(data.warnings))
-            self.slider.blockSignals(True)
-            self.slider.setRange(0, len(data.coords) - 1)
-            self.slider.setValue(len(data.coords) - 1)
-            self.slider.blockSignals(False)
-            self.play.setEnabled(len(data.coords) > 1)
-            self.update_energy_view()
-            self.select_step(len(data.coords) - 1, fit=True)
-            self.refresh_results()
+        if kind in {"calculation", "attached"}:
+            self.add_document(data, replace=kind == 'attached')
+            self.activate_calculation(data)
         else:
             if registration is None:
                 self.calculation = Calculation(data.name, data.atomnos, data.coords[None], np.array([np.nan]))
+                self.add_document(self.calculation)
                 self.filename.setText(data.name)
                 self.details.setText("Cube surface\nNo calculation output loaded.")
                 self.warning.setText("")
@@ -238,10 +261,42 @@ class Window(ResultsMixin, BuilderMixin, QMainWindow):
         self.load_next()
         self.builder_state_changed(json.dumps(self.builder_state))
 
+    def activate_calculation(self, data, step=None):
+        self.play.setChecked(False)
+        self.stop_vibration(restore=False)
+        self.inspector.setCurrentIndex(0)
+        self.studio_tab_changed(0)
+        self.clear_cube()
+        self.calculation = data
+        self.step = len(data.coords)-1 if step is None else min(step, len(data.coords)-1)
+        self.display_coords = None
+        self.filename.setText(data.name)
+        self.details.setText('\n'.join(f'{k}: {v}' for k, v in data.summary.items()))
+        self.warning.setText('\n'.join(data.warnings))
+        self.warning.setVisible(bool(data.warnings))
+        self.slider.blockSignals(True)
+        self.slider.setRange(0, len(data.coords)-1)
+        self.slider.setValue(self.step)
+        self.slider.blockSignals(False)
+        self.play.setEnabled(len(data.coords)>1)
+        self.update_energy_view()
+        self.select_step(self.step, fit=True)
+        self.refresh_results()
+        if data.transitions is not None:
+            self.results.setCurrentIndex(self.uv_tab)
+        elif data.reaction_path is not None:
+            self.results.setCurrentIndex(self.path_tab)
+        self.calculation_picker.blockSignals(True)
+        self.calculation_picker.setCurrentIndex(next((i for i,d in enumerate(self.documents) if d['calculation'] is data), -1))
+        self.calculation_picker.blockSignals(False)
+        self.export_button.setEnabled(self.renderer_ready)
+
     def load_failed(self, message):
         self.pending_files.clear()
         self.busy = False
         self.open_button.setEnabled(True)
+        self.calculation_picker.setEnabled(True)
+        self.load_as_comparison = False
         self.statusBar().showMessage("File could not be loaded; the previous view is retained.")
         QMessageBox.warning(self, "Could not open file", message)
 
@@ -266,9 +321,9 @@ class Window(ResultsMixin, BuilderMixin, QMainWindow):
 
     def send(self, **payload):
         kind = payload.get("type")
-        if kind in {"style", "appearance"} and hasattr(self, "builder_bridge"):
+        if kind in {"style", "appearance", "fog"} and hasattr(self, "builder_bridge"):
             self.builder_command(**payload)
-        if kind == "fit" and self.builder_active:
+        if kind in {"fit", "annotation", "fogPick", "exportCancel"} and self.builder_active:
             self.builder_command(**payload)
             return
         if kind == "export" and self.builder_active:
@@ -287,6 +342,7 @@ class Window(ResultsMixin, BuilderMixin, QMainWindow):
             self.web.focusProxy().setAcceptDrops(True)
             self.web.focusProxy().installEventFilter(self)
         self.send(type="style", style=self.style.currentText())
+        self.send(type="fog", **self.fog_options())
         self.appearance_changed()
         if self.cube:
             self.refresh_surface(reload=True)
@@ -297,9 +353,12 @@ class Window(ResultsMixin, BuilderMixin, QMainWindow):
             self.export_button.setEnabled(True)
         if hasattr(self, "builder_bridge"):
             self.builder_state_changed(json.dumps(self.builder_state))
+        if self.comparison_active:
+            self.refresh_comparison(fit=True)
 
     def render_error(self, message):
         self.statusBar().showMessage("3D rendering error: " + message)
+        self.end_export_progress()
         if self.exporting:
             self.exporting = False
             self.image_path = None
@@ -434,18 +493,31 @@ class Window(ResultsMixin, BuilderMixin, QMainWindow):
         self.step = step
         self.step_label.setText(f"Geometry {step + 1} / {len(self.calculation.coords)}" +
                                (" · surface hidden at this step" if self.cube and step != self.cube_step else ""))
-        self.send(type="geometry", xyz=self.calculation.xyz(step, self.display_coords),
-                  fit=fit, surface=self.surface_is_visible())
+        if not self.comparison_active:
+            self.send(type="geometry", xyz=self.calculation.xyz(step, self.display_coords), annotationKey=str(id(self.calculation)),
+                      fit=fit, surface=self.surface_is_visible())
+        for i, entry in enumerate(self.documents):
+            if entry['calculation'] is self.calculation:
+                entry['step'] = step
+                control = self.compare_table.cellWidget(i, 1)
+                control.blockSignals(True)
+                control.setValue(step+1)
+                control.blockSignals(False)
         energy = self.calculation.energies[step]
         self.energy_label.setText(f"{energy:.10f} Eh" if np.isfinite(energy) else "Energy unavailable")
         relative = self.plot_values()[step]
         self.relative_label.setText(f"{relative:+.5f} {self.units.currentText()} · {self.reference.currentText().lower()}"
-                                    if np.isfinite(relative) else "No SCF / DFT energy for this geometry")
+                                    if np.isfinite(relative) else "No saved energy for this geometry")
         checks = self.calculation.convergence.get(step, [])
         self.convergence_label.setText("\n".join(
             f"{name}: {value:.3g} / {target:.3g} {'✓' if abs(value) <= target else '·'}"
             for name, value, target in checks if np.isfinite(value)))
+        forces = self.calculation.metadata.get('max_forces', [])
+        if len(forces) > step and np.isfinite(forces[step]):
+            self.convergence_label.setText(f'Maximum force: {forces[step]:.6f} eV/Å (saved)')
         self.table.selectRow(step)
+        if hasattr(self, 'path_panel'):
+            self.path_panel.select_step(step)
         self.draw_plot()
 
     def plot_values(self):
@@ -465,7 +537,9 @@ class Window(ResultsMixin, BuilderMixin, QMainWindow):
             return
         values = self.plot_values()
         self.table.setRowCount(len(values))
-        self.table.setHorizontalHeaderLabels(["Geometry", "SCF / DFT energy (Eh)", f"{self.reference.currentText()} ({self.units.currentText()})"])
+        title = self.calculation.metadata.get('energy_label', 'SCF / DFT energy')
+        self.energy_profile_title.setText(title)
+        self.table.setHorizontalHeaderLabels(["Geometry", f"{title} (Eh)", f"{self.reference.currentText()} ({self.units.currentText()})"])
         for row, (energy, relative) in enumerate(zip(self.calculation.energies, values)):
             for col, value in enumerate((str(row + 1), f"{energy:.10f}" if np.isfinite(energy) else "—",
                                          f"{relative:.6f}" if np.isfinite(relative) else "—")):
@@ -504,6 +578,13 @@ class Window(ResultsMixin, BuilderMixin, QMainWindow):
 
     def advance(self):
         if self.calculation:
+            path = self.calculation.reaction_path
+            if path is not None and self.results.currentIndex() == self.path_tab:
+                steps = path.steps[path.steps >= 0]
+                if len(steps):
+                    current = np.flatnonzero(steps == self.step)
+                    self.slider.setValue(int(steps[(int(current[0])+1) % len(steps)] if len(current) else steps[0]))
+                return
             self.slider.setValue((self.step + 1) % len(self.calculation.coords))
 
     def export_image(self):
@@ -531,7 +612,7 @@ class Window(ResultsMixin, BuilderMixin, QMainWindow):
         if self.builder_active:
             if self.builder_editing:
                 self.preview_builder_figure()
-        else:
+        elif not self.comparison_active:
             self.refresh_surface()
         target = self.builder_web if self.builder_active else self.web
         ratio = target.width() / max(1, target.height())
@@ -542,7 +623,8 @@ class Window(ResultsMixin, BuilderMixin, QMainWindow):
         self.exporting = True
         self.export_button.setEnabled(False)
         self.statusBar().showMessage(f"Rendering {width} × {height} pixels…")
-        self.send(type="export", width=width, height=height,
+        self.begin_export_progress()
+        self.send(type="export", width=width, height=height, engine=self.export_engine.currentData(), raySamples=self.ray_samples.value(),
                   samples=self.export_samples.currentData(), transparent=self.transparent.isChecked())
 
     def save_image(self, data):
@@ -556,6 +638,7 @@ class Window(ResultsMixin, BuilderMixin, QMainWindow):
                 self.statusBar().showMessage(f"Saved {self.image_path.name} · {image.width} × {image.height} px · {self.image_dpi} DPI")
             except (OSError, ValueError) as error:
                 QMessageBox.warning(self, "Export failed", str(error))
+            self.end_export_progress()
             self.image_path = None
             self.exporting = False
             self.export_button.setEnabled(True)
@@ -568,7 +651,7 @@ class Window(ResultsMixin, BuilderMixin, QMainWindow):
             try:
                 with open(path, "w", newline="", encoding="utf-8") as file:
                     writer = csv.writer(file)
-                    writer.writerow(["geometry", "scf_dft_energy_hartree", f"{self.reference.currentText()} ({self.units.currentText()})"])
+                    writer.writerow(["geometry", "energy_hartree", f"{self.reference.currentText()} ({self.units.currentText()})"])
                     for i, (energy, value) in enumerate(zip(self.calculation.energies, self.plot_values())):
                         writer.writerow([i + 1, energy if np.isfinite(energy) else "", value if np.isfinite(value) else ""])
                 self.statusBar().showMessage(f"Saved {Path(path).name}")
@@ -590,6 +673,9 @@ class Window(ResultsMixin, BuilderMixin, QMainWindow):
                 QMessageBox.warning(self, "Export failed", str(error))
 
     def closeEvent(self, event):
+        if self.exporting:
+            self.send(type="exportCancel")
+            self.end_export_progress()
         self.timer.stop()
         self.pool.waitForDone()
         super().closeEvent(event)

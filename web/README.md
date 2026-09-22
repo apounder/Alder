@@ -31,7 +31,9 @@ spirocycles, geometry, measurements, undo, export, and share-link round trips.
 
 Third-party sources: [Three.js](https://threejs.org/) (MIT),
 [RDKit](https://www.rdkit.org/) (BSD), [LZ-String](https://github.com/pieroxy/lz-string)
-(MIT), and [Ketcher](https://github.com/epam/ketcher) (Apache-2.0). Build scripts
+(MIT), [three-gpu-pathtracer](https://github.com/gkjohnson/three-gpu-pathtracer),
+[three-mesh-bvh](https://github.com/gkjohnson/three-mesh-bvh),
+[Mediabunny](https://mediabunny.dev/) (MIT), and [Ketcher](https://github.com/epam/ketcher) (Apache-2.0). Build scripts
 retain their notices next to the desktop assets. RDKit's vendored JS/WASM and
 license are in `public/vendor/rdkit`.
 

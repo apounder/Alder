@@ -62,7 +62,7 @@ try:
     w.preview_builder_figure();pump()
     assert w.viewer_stack.currentWidget()==w.builder_web
     assert camera==view('cameraState()',True)
-    assert view('overlays.visible',True) is False
+    assert view('overlays.visible',True) is True  # Figure mode permits atom selection for bond styling.
     # Spin runs only in the visible view and stops drawing when turned off.
     w.builder_spin.setChecked(True);pump(.3)
     before=view('frameCount',True);hidden=view('frameCount');pump(.5)

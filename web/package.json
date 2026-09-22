@@ -21,9 +21,12 @@
     "ketcher-react": "3.18.0",
     "ketcher-standalone": "3.18.0",
     "lz-string": "1.5.0",
+    "mediabunny": "1.59.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "three": "0.180.0"
+    "three": "0.180.0",
+    "three-gpu-pathtracer": "0.0.24",
+    "three-mesh-bvh": "0.9.5"
   },
   "devDependencies": {
     "playwright": "1.55.1",

@@ -24,7 +24,7 @@ export function createRelaxer(model, iterations = 300) {
   function* steps() {
     while (iteration < iterations) {
       const d = model.atoms.map(() => [0, 0, 0]);
-      for (const b of model.bonds)
+      for (const b of model.bonds.filter(b=>!b.kind))
         movePair(
           d,
           b.a,

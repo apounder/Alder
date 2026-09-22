@@ -9,7 +9,7 @@ import { planFragment } from './fragments.js';
 export class StudioEditor extends Editor {
   constructor(view, callbacks) {
     super(view,callbacks);
-    this.autoHydrogens=true;this.bondOrder=1;this.draw=null;
+    this.autoHydrogens=true;this.bondOrder=1;this.bondKind=null;this.draw=null;
     view.onFrame=()=>{if(this.drag||this.rotateDrag)this.update();};
     view.renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
     view.renderer.domElement.addEventListener('dblclick',()=>{if(['select','rect','lasso'].includes(this.tool)){this.selection=[];this.update();}});
@@ -49,8 +49,13 @@ export class StudioEditor extends Editor {
   }
   setBond(a,b,order=this.bondOrder) {
     const found=this.getModel().bonds.find(bond=>(bond.a===a&&bond.b===b)||(bond.a===b&&bond.b===a));
-    if(found?.order===order)return;
-    this.mutate(m=>{if(found)found.order=order;else m.bonds.push({a,b,order});this.selection=[a,b];});
+    const kind=this.bondKind;
+    if(found?.order===order&&(found.kind||null)===kind&&(kind!=='dative'||found.a===a))return;
+    this.mutate(m=>{
+      const bond={a,b,order:kind?1:order,...(kind?{kind}:{})};
+      if(found)m.bonds.splice(m.bonds.indexOf(found),1,bond);else m.bonds.push(bond);
+      this.selection=[a,b];
+    },kind||found?.kind?false:this.autoHydrogens);
   }
   bond(i) {
     if(this.armed===null){this.armed=i;this.update();return;}
@@ -136,6 +141,7 @@ export class StudioEditor extends Editor {
       super.down(e);this.start.bond=hit===null?this.view.pickBond(e):null;return;
     }
     if(e.button===0&&this.tool==='bond') {
+      if(this.bondKind){super.down(e);return;}
       const bond=hit===null?this.view.pickBond(e):null;
       const origin=hit===null?this.view.centroid():point(this.getModel().atoms[hit]);
       this.draw={parent:hit,bond,x:e.clientX,y:e.clientY,pointerId:e.pointerId,
@@ -165,7 +171,7 @@ export class StudioEditor extends Editor {
     }
     super.move(e);
     if(!this.locked&&this.tool==='add'&&hit!==null)this.view.showGhost(point(this.getModel().atoms[hit]),null,this.element);
-    if(!this.locked&&this.tool==='bond'&&hit!==null) {
+    if(!this.locked&&this.tool==='bond'&&!this.bondKind&&hit!==null) {
       const target=this.growthTarget(hit);this.view.showGhost(target.position,target.parent,this.element);
     }
     if(!this.locked&&this.tool==='fragment'&&this.fragment) {

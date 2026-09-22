@@ -12,6 +12,8 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QTableWidget,
     QDoubleSpinBox, QFileDialog, QMessageBox)
 from .data import ELEMENTS
 from .ui import label
+from .uv import UVPanel
+from .path_view import PathPanel
 
 
 def result_table(headers):
@@ -110,11 +112,22 @@ class ResultsMixin:
         bar.addStretch()
         layout.addLayout(bar)
         self.vibration_tab = tabs.addTab(modes, 'Vibrations')
+        self.uv_panel = UVPanel()
+        self.uv_panel.saved.connect(self.statusBar().showMessage)
+        self.uv_tab = tabs.addTab(self.uv_panel, 'UV–Vis')
+        self.path_panel = PathPanel()
+        self.path_panel.geometry_selected.connect(self.slider.setValue)
+        self.path_panel.trajectory_selected.connect(self.attach_trajectory)
+        self.path_panel.saved.connect(self.statusBar().showMessage)
+        self.path_tab = tabs.addTab(self.path_panel, 'IRC / Scans')
         tabs.currentChanged.connect(self.results_tab_changed)
         self.refresh_results()
 
     def refresh_results(self):
         self.update_orbitals()
+        self.uv_panel.set_calculation(self.calculation)
+        self.path_panel.set_calculation(self.calculation)
+        self.path_panel.select_step(self.step)
         calc = self.calculation
         freqs = calc.frequencies if calc else []
         self.vibration_table.blockSignals(True)

@@ -14,7 +14,10 @@ def molecule_from_model(model):
     orders = {1: Chem.BondType.SINGLE, 2: Chem.BondType.DOUBLE,
               3: Chem.BondType.TRIPLE, 4: Chem.BondType.AROMATIC}
     for bond in model['bonds']:
-        molecule.AddBond(bond['a'], bond['b'], orders[bond['order']])
+        if bond.get('kind') == 'ts':
+            raise ValueError('TS contacts are 3D figure annotations. Remove them before generating a 2D chemical structure.')
+        order = Chem.BondType.DATIVE if bond.get('kind') == 'dative' else orders[bond['order']]
+        molecule.AddBond(bond['a'], bond['b'], order)
     molecule = molecule.GetMol()
     conf = Chem.Conformer(len(model['atoms']))
     conf.Set3D(True)
@@ -72,7 +75,7 @@ def embed_3d(block, name='Built molecule'):
             if value:
                 entry[field] = value
         atoms.append(entry)
-    bonds = [dict(a=b.GetBeginAtomIdx(), b=b.GetEndAtomIdx(), order=round(b.GetBondTypeAsDouble())) for b in molecule.GetBonds()]
+    bonds = [dict(a=b.GetBeginAtomIdx(), b=b.GetEndAtomIdx(), order=round(b.GetBondTypeAsDouble()), **({'kind':'dative'} if b.GetBondType() == Chem.BondType.DATIVE else {})) for b in molecule.GetBonds()]
     result = dict(name=name, atoms=atoms, bonds=bonds, smiles=Chem.MolToSmiles(Chem.RemoveHs(molecule)), embedding=method)
     note = f'3D conformer generated locally with {method}.'
     if not converged:

@@ -37,7 +37,7 @@ export function writeMOL(model) {
     model.bonds
       .map(
         (b) =>
-          `${pad(b.a + 1, 3)}${pad(b.b + 1, 3)}${pad(b.order, 3)}  0  0  0  0`,
+          `${pad(b.a + 1, 3)}${pad(b.b + 1, 3)}${pad(b.kind==='dative'?9:b.kind==='ts'?8:b.order, 3)}  0  0  0  0`,
       )
       .join("\n") + (model.bonds.length ? "\n" : "");
   const charges = model.atoms
@@ -57,6 +57,7 @@ export function writeMOL(model) {
       s+=`M  ${tag}${pad(chunk.length,3)}`+chunk.map(([n,v])=>pad(n,4)+pad(tag==='RAD'?(v===1?2:3):v,4)).join('')+'\n';
     }
   }
+  model.bonds.forEach((b,i)=>{if(b.kind)s+=`M  STB ${i+1} ${b.kind}\n`;});
   return s + "M  END\n";
 }
 export function writePDB(model) {
@@ -75,7 +76,7 @@ export function writePDB(model) {
       )
       .join("\n") + "\n";
   for (let i = 0; i < model.atoms.length; i++) {
-    const ns = model.bonds.flatMap((b) =>
+    const ns = model.bonds.filter(b=>!b.kind).flatMap((b) =>
       b.a === i
         ? Array(b.order === 4 ? 1 : b.order).fill(b.b + 1)
         : b.b === i

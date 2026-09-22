@@ -30,7 +30,7 @@ the source repository. You do not have to rebuild just to try this local app.
    artifact. Extract it to obtain the installer, portable ZIP, and SHA-256
    checksums. Actions artifacts require a GitHub login and expire after 30 days.
 5. Test the installer on a normal Windows PC. Then open **Releases → Draft a
-   new release**, choose/create the tag `v0.2.0`, and attach the installer,
+   new release**, choose/create the tag `v0.3.1`, and attach the installer,
    portable ZIP, and `SHA256SUMS.txt`. Publish when ready. Public release assets
    provide the easy, lasting download for users without a GitHub account.
 

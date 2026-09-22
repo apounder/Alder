@@ -67,6 +67,7 @@ export class Editor {
     const m = this.getModel(),
       vals = m.atoms.map(() => 0);
     for (const b of m.bonds) {
+      if(b.kind)continue;
       vals[b.a] += b.order === 4 ? 1.5 : b.order;
       vals[b.b] += b.order === 4 ? 1.5 : b.order;
     }

@@ -153,7 +153,7 @@ try:
     wait(lambda: not window.builder_editing)
     wait(lambda: window.viewer_stack.currentWidget()==window.builder_web)
     assert js('builderApp.model.bonds[0].order')==2
-    assert js('builderApp.view.overlays.visible') is False
+    assert js('builderApp.view.overlays.visible') is True  # Selection remains available for Figure bond edits.
     window.preset.setCurrentText('Paton-inspired')
     wait(lambda: js("builderApp.view.appearance.preset")=='Paton-inspired')
     assert not window.results.isVisible()
@@ -189,6 +189,8 @@ try:
     window.builder_order.setCurrentIndex(0)
     window.builder_elements['C'].click()
     window.builder_new.click();atoms(0);wait(lambda:window.builder_state['tool']=='add')
+    # Native state notifications can precede completion of the queued New command.
+    wait(lambda: js("builderApp.editor.tool==='add' && !builderApp.editor.locked && builderApp.view.active && builderApp.model.atoms.length===0") is True)
     target=window.builder_web.focusProxy() or window.builder_web
     QTest.mouseClick(target,Qt.MouseButton.LeftButton,Qt.KeyboardModifier.NoModifier,QPoint(window.builder_web.width()//2,window.builder_web.height()//2))
     atoms(5);assert window.builder_state['formula']=='CH₄'

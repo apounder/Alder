@@ -9,6 +9,8 @@ import {
   formula,
   idealLength,
   validateModel,
+  CPK,
+  elements,
 } from "../src/chemistry.js";
 import {
   writeMOL,
@@ -21,6 +23,44 @@ import { measure } from "../src/measure.js";
 import { relax } from "../src/editor/relax.js";
 import { fallbackEmbed } from "../src/rdkit.js";
 const aspirin = parseMOL(fs.readFileSync("src/fixtures/aspirin.mol", "utf8"));
+test('Every element has a color in all Studio presets, with explicit overlay colors taking precedence', async()=>{
+  const {StudioView}=await import('../src/studio-view.js');
+  assert.equal(elements.length,118);
+  assert.deepEqual(Object.keys(CPK).sort(),[...elements].sort());
+  assert.equal(new Set(Object.values(CPK)).size,118);
+  for(const preset of ['Studio','Paton-inspired','Soft studio']) {
+    const view={preset:MoleculeAppearance.settings(preset)};
+    for(const el of elements) {
+      assert.match(CPK[el],/^#[0-9A-F]{6}$/);
+      const color=StudioView.prototype.color.call(view,{el});
+      assert.equal(color,view.preset.colors[el]||CPK[el]);
+      assert.equal(StudioView.prototype.color.call(view,{el,structureColor:'#123456'}),'#123456');
+    }
+    const main=['H','C','N','O','F','P','S','Cl','Br','I'].map(el=>StudioView.prototype.color.call(view,{el}).toUpperCase());
+    for(const el of elements.filter(el=>!['H','C','N','O','F','P','S','Cl','Br','I'].includes(el)))
+      assert.ok(!main.includes(CPK[el]),`${el} duplicates a familiar main-group color`);
+  }
+});
+test('Dative and TS annotations preserve direction, hydrogen counts, MOL/hash round trips, and undo', async()=>{
+  const {StudioEditor}=await import('../src/editor/studio-editor.js');
+  const {adjustHydrogens}=await import('../src/editor/hydrogens.js');
+  let model={name:'contacts',atoms:[{el:'N',x:0,y:0,z:0},{el:'Zn',x:3,y:0,z:0},{el:'O',x:0,y:3,z:0}],bonds:[]};
+  adjustHydrogens(model);const before=structuredClone(model);
+  const canvas={addEventListener(){},style:{}};
+  const view={renderer:{domElement:canvas},style:{spin:false},controls:{enabled:true},camera:{getWorldDirection:v=>v.set(0,0,1)},visible:()=>true,updateOverlays(){},showGhost(){},fit(){}};
+  const editor=new StudioEditor(view,{getModel:()=>model,onChange:m=>model=m,onState(){},toast(){}});
+  editor.bondKind='dative';editor.setBond(0,1);editor.bondKind='ts';editor.setBond(0,2);
+  assert.deepEqual(model.atoms,before.atoms);
+  adjustHydrogens(model);assert.deepEqual(model.atoms,before.atoms);
+  assert.deepEqual(parseMOL(writeMOL(model)).bonds,model.bonds);
+  assert.deepEqual(readHash(shareHash(model,{})).bonds,model.bonds);
+  editor.bondKind='dative';editor.setBond(1,0);
+  assert.equal(model.bonds.find(b=>b.kind==='dative').a,1);
+  editor.undo();assert.equal(model.bonds.find(b=>b.kind==='dative').a,0);
+  editor.undo();editor.undo();assert.deepEqual(model,before);
+  const contact={atoms:[{el:'C',x:0,y:0,z:0},{el:'C',x:4,y:0,z:0}],bonds:[{a:0,b:1,order:1,kind:'ts'}]};
+  await relax(contact);assert.equal(contact.atoms[1].x,4);
+});
 test("V2000 aspirin fixture: valid connectivity, explicit H, sensible lengths", () => {
   assert.equal(aspirin.atoms.length, 21);
   assert.equal(aspirin.bonds.length, 21);

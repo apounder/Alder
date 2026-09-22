@@ -9,6 +9,24 @@ from molecule_studio.data import BOHR, Calculation, read_calculation, read_cube,
 DATA = Path(__file__).parent / "data"
 
 
+@pytest.mark.parametrize('fail', [False, True])
+def test_import_closes_files_even_when_parser_fails(monkeypatch, fail):
+    import molecule_studio.data as module
+    parser = module.ccopen(str(DATA/'gaussian-opt.log'))
+    monkeypatch.setattr(module, 'ccopen', lambda *args, **kwargs: parser)
+    if fail:
+        def broken():
+            raise ValueError('Interrupted parse')
+        parser.parse = broken
+        with pytest.raises(ValueError, match='Interrupted parse'):
+            module.read_calculation(DATA/'gaussian-opt.log')
+    else:
+        module.read_calculation(DATA/'gaussian-opt.log')
+    assert all(file.closed for file in parser.inputfile.files)
+    assert 'extract' not in parser.__dict__
+    assert 'after_parsing' not in parser.__dict__
+
+
 @pytest.mark.parametrize("filename,steps,first,last", [
     ("gaussian-opt.log", 5, -382.294279146, -382.308266602),
     ("orca-opt.out", 4, -382.05510864, -382.05513337),

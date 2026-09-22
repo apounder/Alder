@@ -110,8 +110,8 @@ try:
         wait_for(lambda: not window.surface_timer.isActive())
         assert javascript("calculationApp.surfaceOptions.isoval") == 0.08
         png = temp / "surface.png"
-        window.image_path = png
-        window.send(type="export")
+        window.export_size.setValue(800)
+        window.render_export(png)
         wait_for(lambda: png.exists())
         assert png.read_bytes().startswith(b"\x89PNG")
         assert png.stat().st_size > 5000

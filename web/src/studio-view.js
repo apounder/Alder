@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 import { MolecularView } from './viewer.js';
+import { CPK } from './chemistry.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -27,6 +28,8 @@ export class StudioView extends MolecularView {
     this.controls.keys = []; // Editor shortcuts must not change the mouse action.
     this.controls.rotateSpeed = 2.4;
     this.controls.mouseButtons.MIDDLE = THREE.MOUSE.ROTATE;
+    this.fogOptions={enabled:false,strength:.35,offset:0};
+    this.installDepthCue();
     for(const event of ['change','start','end'])this.controls.addEventListener(event,()=>this.invalidate());
     // Trackball accumulates input until update(); wake only for pointer gestures.
     this.renderer.domElement.addEventListener('pointermove',e=>{if(e.buttons&&this.controls.enabled)this.invalidate();});
@@ -57,6 +60,7 @@ export class StudioView extends MolecularView {
   render() {
     // RenderPass clears before applying scene.background; reset the GL clear alpha.
     this.renderer.setClearColor(0x000000,0);
+    this.updateFog();
     this.keyLight.position.copy(this.camera.position).add(new THREE.Vector3(-3,5,2));
     this.keyLight.target.position.copy(this.controls.target);
     if(this.appearance.ao && this.composer) {
@@ -76,6 +80,108 @@ export class StudioView extends MolecularView {
     const geometryChanged=options.style!==undefined || ['hydrogens','labels','size'].some(k=>options[k]!==undefined);
     if(geometryChanged)this.syncModel(this.model);
     this.updateOverlays();this.invalidate();
+  }
+  setFog(options) {
+    if(options.enabled!==undefined)this.fogOptions.enabled=!!options.enabled;
+    for(const [key,min,max] of [['strength',0,1],['offset',-1,2]])
+      if(Number.isFinite(options[key]))this.fogOptions[key]=THREE.MathUtils.clamp(options[key],min,max);
+    if(!this.fogOptions.enabled)this.setDepthCuePick(false,false);
+    this.updateFog();this.invalidate();
+  }
+  setDepthCuePick(enabled,notify=true) {
+    if(enabled&&!this.depthPicking)this.depthCursor=this.renderer.domElement.style.cursor;
+    if(enabled)this.renderer.domElement.style.cursor='crosshair';
+    else if(this.depthPicking)this.renderer.domElement.style.cursor=this.depthCursor||'grab';
+    this.depthPicking=!!enabled;
+    if(notify)this.onFogChange?.({...this.fogOptions,armed:this.depthPicking});
+  }
+  fogBounds(camera=this.camera) {
+    camera.updateMatrixWorld();
+    let near=Infinity,far=-Infinity;
+    const p=new THREE.Vector3();
+    this.model.atoms.forEach((a,i)=>{
+      if(!this.visible(i))return;
+      const depth=-p.set(a.x,a.y,a.z).applyMatrix4(camera.matrixWorldInverse).z,r=this.radius(a);
+      near=Math.min(near,depth-r);far=Math.max(far,depth+r);
+    });
+    return Number.isFinite(near)?{near,span:Math.max(1,far-near)}:{near:0,span:1};
+  }
+  updateFog(camera=this.camera) {
+    if(!this.fogOptions?.enabled||!this.fogOptions.strength){this.scene.fog=null;return;}
+    const {near,span}=this.fogBounds(camera),start=near+span*this.fogOptions.offset;
+    this.scene.fog??=new THREE.Fog();
+    this.scene.fog.color.set(this.style.background==='dark'?'#202824':'#ffffff');
+    this.scene.fog.near=start;this.scene.fog.far=start+span/this.fogOptions.strength;
+  }
+  installDepthCue() {
+    const canvas=this.renderer.domElement;
+    const finish=()=>{
+      const drag=this.fogDrag;if(!drag)return;
+      this.fogDrag=null;this.controls.enabled=drag.enabled;this.controls.autoRotate=drag.spin;
+      if(canvas.hasPointerCapture(drag.id))canvas.releasePointerCapture(drag.id);
+      this.invalidate();
+    };
+    this.cancelDepthCue=()=>{finish();this.setDepthCuePick(false);};
+    canvas.addEventListener('pointerdown',e=>{
+      if(!this.active||!this.controls.enabled)return;
+      const hit=this.pick(e),pick=e.button===0&&this.depthPicking&&hit!==null;
+      const drag=e.button===2&&!e.shiftKey&&this.fogOptions.enabled&&hit===null&&this.pickBond(e)===null;
+      if(!pick&&!drag)return;
+      this.fogDrag={id:e.pointerId,x:e.clientX,y:e.clientY,hit,pick,offset:this.fogOptions.offset,
+        enabled:this.controls.enabled,spin:this.controls.autoRotate};
+      this.controls.enabled=false;this.controls.autoRotate=false;
+      canvas.setPointerCapture(e.pointerId);e.preventDefault();e.stopImmediatePropagation();
+    },true);
+    canvas.addEventListener('pointermove',e=>{
+      const d=this.fogDrag;if(!d||d.id!==e.pointerId)return;
+      if(!d.pick){
+        this.setFog({offset:d.offset+(e.clientX-d.x)*3/Math.max(1,canvas.clientWidth)});
+        this.onFogChange?.({...this.fogOptions,armed:this.depthPicking});
+      }
+      e.preventDefault();e.stopImmediatePropagation();
+    },true);
+    canvas.addEventListener('pointerup',e=>{
+      const d=this.fogDrag;if(!d||d.id!==e.pointerId)return;
+      if(d.pick&&Math.hypot(e.clientX-d.x,e.clientY-d.y)<5&&this.pick(e)===d.hit){
+        const a=this.model.atoms[d.hit],{near,span}=this.fogBounds();
+        const depth=-new THREE.Vector3(a.x,a.y,a.z).applyMatrix4(this.camera.matrixWorldInverse).z;
+        this.setFog({enabled:true,offset:(depth-near)/span});this.setDepthCuePick(false);
+      }
+      finish();e.preventDefault();e.stopImmediatePropagation();
+    },true);
+    for(const type of ['pointercancel','lostpointercapture'])canvas.addEventListener(type,finish,true);
+    canvas.addEventListener('contextmenu',e=>e.preventDefault());
+    window.addEventListener('keydown',e=>{
+      if(e.key==='Escape'&&(this.depthPicking||this.fogDrag)){
+        this.cancelDepthCue();e.preventDefault();e.stopImmediatePropagation();
+      }
+    },true);
+  }
+  applyFogToImage(canvas,camera) {
+    this.updateFog(camera);
+    if(!this.scene.fog)return;
+    // One raster depth pass applies the same cue to ray-traced pixels. Source-atop
+    // preserves the ray tracer's alpha, including antialiased transparent edges.
+    if(!this.fogMaterial){
+      this.fogMaterial=new THREE.MeshBasicMaterial({side:THREE.DoubleSide});
+      this.fogMaterial.onBeforeCompile=shader=>{
+        shader.fragmentShader=shader.fragmentShader.replace('#include <fog_fragment>',
+          '#ifdef USE_FOG\ngl_FragColor.rgb = fogColor;\ngl_FragColor.a = smoothstep(fogNear, fogFar, vFogDepth);\n#endif');
+      };
+    }
+    this.fogMaterial.color.copy(this.scene.fog.color);
+    const hidden=[this.overlays,this.labels,...this.outlineMeshes],visible=hidden.map(o=>o.visible);
+    const background=this.scene.background,override=this.scene.overrideMaterial;
+    try {
+      hidden.forEach(o=>o.visible=false);this.scene.background=null;this.scene.overrideMaterial=this.fogMaterial;
+      this.renderer.setSize(canvas.width,canvas.height,false);this.renderer.setClearColor(0,0);
+      this.renderer.render(this.scene,camera);
+      const ctx=canvas.getContext('2d');ctx.save();ctx.globalCompositeOperation='source-atop';
+      ctx.drawImage(this.renderer.domElement,0,0);ctx.restore();
+    } finally {
+      this.scene.background=background;this.scene.overrideMaterial=override;
+      hidden.forEach((o,i)=>o.visible=visible[i]);this.resize();
+    }
   }
   cameraState() {
     return {up:this.camera.up.toArray(),position:this.camera.position.toArray(),target:this.controls.target.toArray(),quaternion:this.camera.quaternion.toArray(),zoom:this.camera.zoom,
@@ -145,9 +251,9 @@ export class StudioView extends MolecularView {
     const r=MoleculeAppearance.radii[a.el] ?? 1.6;
     return r*(this.style.representation==='space' ? 1 : a.el==='H' ? this.preset.hydrogenScale : this.preset.scale)*this.style.size;
   }
-  color(a) { return this.preset.colors[a.el] || '#d9d9d9'; }
+  color(a) { return a.structureColor || this.preset.colors[a.el] || CPK[a.el] || '#d9d9d9'; }
   bondRadius() { return this.preset.bondRadius; }
-  bondColor() { return this.preset.bondColor; }
+  bondColor(a) { return a?.structureColor || this.preset.bondColor; }
   bondAxis(dir,bond) {
     // Keep ring double bonds in the ring plane instead of hiding one behind the other.
     const {atoms,bonds}=this.model;
@@ -242,5 +348,5 @@ export class StudioView extends MolecularView {
     });
     return hit ? this.halves[hit.instanceId].bond : null;
   }
-  dispose() { this.aoPass?.ssaoMaterial.dispose();this.aoPass?.dispose();this.outputPass?.dispose();this.composer?.dispose();super.dispose(); }
+  dispose() { this.fogMaterial?.dispose();this.aoPass?.ssaoMaterial.dispose();this.aoPass?.dispose();this.outputPass?.dispose();this.composer?.dispose();super.dispose(); }
 }

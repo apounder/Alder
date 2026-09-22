@@ -1,4 +1,5 @@
 """Build and smoke-check a Windows x64 bundle, then make the installer and ZIP."""
+import argparse
 import hashlib
 import json
 import os
@@ -17,13 +18,16 @@ ROOT = Path(__file__).resolve().parents[1]
 def main():
     if sys.platform != 'win32' or sysconfig.get_platform() != 'win-amd64':
         raise SystemExit('Build on 64-bit Windows, or run the Windows download workflow on GitHub.')
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--dist-dir', type=Path, default=ROOT/'dist', help='Output directory; use a separate directory while an older portable copy is running.')
+    dist = parser.parse_args().dist_dir.resolve()
     compiler = shutil.which('ISCC.exe') or str(Path(os.environ.get('ProgramFiles(x86)', 'C:/Program Files (x86)')) / 'Inno Setup 6' / 'ISCC.exe')
     if not Path(compiler).is_file():
         raise SystemExit('Install Inno Setup 6.3+ first. GitHub Windows runners already include it.')
     version = tomllib.loads((ROOT / 'pyproject.toml').read_text(encoding='utf-8'))['project']['version']
     subprocess.run([sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean',
-                    str(ROOT / 'packaging' / 'MoleculeStudio.spec')], cwd=ROOT, check=True)
-    bundle = ROOT / 'dist' / 'MoleculeStudio'
+                    '--distpath', str(dist), str(ROOT / 'packaging' / 'MoleculeStudio.spec')], cwd=ROOT, check=True)
+    bundle = dist / 'MoleculeStudio'
     shutil.copy2(ROOT / 'packaging' / 'START-HERE.txt', bundle)
     write_notices(bundle, version)
 
@@ -41,8 +45,9 @@ def main():
     if not result.get('ok') or not result.get('frozen'):
         raise SystemExit(f'Packaged application check failed; see {report}')
 
-    subprocess.run([compiler, f'/DAppVersion={version}', str(ROOT / 'packaging' / 'windows.iss')], check=True)
-    release = ROOT / 'dist' / 'release'
+    release = dist / 'release'
+    release.mkdir(parents=True, exist_ok=True)
+    subprocess.run([compiler, f'/DAppVersion={version}', f'/DBundleDir={bundle}', f'/O{release}', str(ROOT / 'packaging' / 'windows.iss')], check=True)
     stem = f'MoleculeStudio-{version}-Windows-x64'
     portable = Path(shutil.make_archive(str(release / f'{stem}-Portable'), 'zip', root_dir=bundle.parent, base_dir=bundle.name))
     installer = release / f'{stem}-Setup.exe'

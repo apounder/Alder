@@ -7,13 +7,14 @@ from PySide6.QtCore import QObject, Qt, QUrl, Signal, Slot
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QFileDialog, QGridLayout,
-    QHBoxLayout, QLineEdit, QPushButton, QSlider, QVBoxLayout, QWidget, QMenu, QWidgetAction, QToolButton,
+    QHBoxLayout, QLineEdit, QPushButton, QSlider, QVBoxLayout, QWidget, QMenu, QWidgetAction, QToolButton, QScrollArea,
 )
 from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineCore import QWebEngineSettings
 from PySide6.QtWebEngineWidgets import QWebEngineView
 
 from .data import ELEMENTS
+from .render_export import ExportBridge
 from .sketch import SketchMixin
 from .fragment_preview import FragmentPreview
 from .ui import inspector_page, label
@@ -35,7 +36,7 @@ HINTS = {
 }
 
 
-class BuilderBridge(QObject):
+class BuilderBridge(ExportBridge):
     command = Signal(str)
     initialized = Signal()
     state = Signal(str)
@@ -125,10 +126,10 @@ class BuilderMixin(SketchMixin):
         side.setContentsMargins(0, 0, 0, 0)
         side.setSpacing(8)
         self.builder_order = QComboBox()
-        for name, order in (("Single bond", 1), ("Double bond", 2), ("Triple bond", 3)):
+        for name, order in (("Single bond", 1), ("Double bond", 2), ("Triple bond", 3), ("Dative arrow", "dative"), ("TS contact", "ts")):
             self.builder_order.addItem(name, order)
         self.builder_order.setAccessibleName("Bond order")
-        self.builder_order.setToolTip("Click a bond to apply this order; Attach atom uses it for new bonds")
+        self.builder_order.setToolTip("Ordinary bonds: click a bond to change it. Dative/TS: click two atoms; donor first for dative.")
         self.builder_order.currentIndexChanged.connect(lambda: self.builder_command(type="bondOrder", order=self.builder_order.currentData()))
         side.addWidget(self.builder_order)
         self.builder_auto_h = QCheckBox("Adjust hydrogens when editing")
@@ -303,6 +304,7 @@ class BuilderMixin(SketchMixin):
         self.builder_bridge.error.connect(self.render_error)
         self.builder_bridge.text.connect(self.save_builder_text)
         self.builder_bridge.image.connect(self.save_image)
+        self.connect_export_bridge(self.builder_bridge)
         self.builder_channel = QWebChannel(self.builder_web.page())
         self.builder_channel.registerObject("builder", self.builder_bridge)
         self.builder_web.page().setWebChannel(self.builder_channel)
@@ -345,12 +347,68 @@ class BuilderMixin(SketchMixin):
             self.view_background.addItem(title, value)
         self.view_background.currentIndexChanged.connect(lambda: self.send(type="style", background=self.view_background.currentData()))
         layout.addWidget(self.view_background)
-        layout.addWidget(label("Drag to rotate · Right-drag to pan · Scroll to zoom. Movement stops when you release the mouse.", "muted"))
+        self.fog_enabled = QCheckBox('Fog / depth cue')
+        self.fog_enabled.toggled.connect(self.fog_changed)
+        layout.addWidget(self.fog_enabled)
+        self.fog_strength = QSlider(Qt.Orientation.Horizontal)
+        self.fog_strength.setRange(0, 100)
+        self.fog_strength.setValue(35)
+        self.fog_strength.setAccessibleName('Fog strength')
+        self.fog_strength.valueChanged.connect(self.fog_changed)
+        layout.addWidget(label('Fog strength', 'small'))
+        layout.addWidget(self.fog_strength)
+        self.fog_depth = QSlider(Qt.Orientation.Horizontal)
+        self.fog_depth.setRange(-100, 200)
+        self.fog_depth.setValue(0)
+        self.fog_depth.setAccessibleName('Fog start depth')
+        self.fog_depth.valueChanged.connect(self.fog_changed)
+        layout.addWidget(label('Fog start depth', 'small'))
+        layout.addWidget(self.fog_depth)
+        self.depth_cue = QPushButton('Depth cue')
+        self.depth_cue.setCheckable(True)
+        self.depth_cue.setToolTip('Enable fog, then click an atom to set where fading starts. Escape cancels picking.')
+        self.depth_cue.clicked.connect(self.choose_depth_cue)
+        self.viewbar.insertWidget(self.viewbar.count()-1, self.depth_cue)
+        layout.addWidget(label('Drag to rotate · Scroll to zoom. With fog on, right-drag empty space to move the fog; Shift + right-drag pans. With fog off, right-drag pans.', 'muted'))
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        scroll.setWidget(panel)
+        scroll.setFixedSize(340, min(panel.sizeHint().height()+4, max(300, self.screen().availableGeometry().height()-100)))
         action = QWidgetAction(menu)
-        action.setDefaultWidget(panel)
+        action.setDefaultWidget(scroll)
         menu.addAction(action)
         self.view_options.setMenu(menu)
         self.viewbar.insertWidget(self.viewbar.count()-1, self.view_options)
+
+    def fog_options(self):
+        return dict(enabled=self.fog_enabled.isChecked(), strength=self.fog_strength.value()/100,
+                    offset=self.fog_depth.value()/100)
+
+    def fog_changed(self, state=None):
+        if isinstance(state, str):
+            data = json.loads(state)
+            for control, value in ((self.fog_enabled, bool(data['enabled'])),
+                                   (self.fog_strength, round(data['strength']*100)),
+                                   (self.fog_depth, round(data['offset']*100))):
+                control.blockSignals(True)
+                if isinstance(control, QCheckBox):
+                    control.setChecked(value)
+                else:
+                    control.setValue(value)
+                control.blockSignals(False)
+            self.depth_cue.setChecked(bool(data.get('armed')))
+        if not self.fog_enabled.isChecked():
+            self.depth_cue.setChecked(False)
+        self.send(type='fog', **self.fog_options())
+
+    def choose_depth_cue(self, checked):
+        if checked:
+            self.fog_enabled.setChecked(True)
+            if self.fog_strength.value() == 0:
+                self.fog_strength.setValue(35)
+            self.statusBar().showMessage('Click an atom to start the depth cue at its position. Escape cancels.')
+        self.send(type='fogPick', enabled=checked)
 
     def builder_initialized(self):
         self.builder_ready = True
@@ -358,6 +416,7 @@ class BuilderMixin(SketchMixin):
             self.builder_web.focusProxy().setAcceptDrops(True)
             self.builder_web.focusProxy().installEventFilter(self)
         self.builder_command(type="style", style=self.style.currentText())
+        self.builder_command(type="fog", **self.fog_options())
         self.builder_command(type="appearance", preset=self.preset.currentText(), outline=self.outlines.isChecked(), ao=self.ambient_occlusion.isChecked(), orthographic=self.orthographic.isChecked())
         pending, self.builder_pending = self.builder_pending, []
         for payload in pending:
@@ -404,7 +463,7 @@ class BuilderMixin(SketchMixin):
         self.builder_auto_h.setChecked(state.get("autoHydrogens", True))
         self.builder_auto_h.blockSignals(False)
         self.builder_order.blockSignals(True)
-        self.builder_order.setCurrentIndex(state.get("bondOrder", 1) - 1)
+        self.builder_order.setCurrentIndex(self.builder_order.findData(state.get("bondKind") or state.get("bondOrder", 1)))
         self.builder_order.blockSignals(False)
         self.builder_apply.setText(f"Apply {state.get('element', 'C')} to selection")
         self.builder_spin.setEnabled(not self.builder_editing or (enabled and tool == "select"))
@@ -412,7 +471,12 @@ class BuilderMixin(SketchMixin):
             self.builder_spin.setChecked(False)
         self.builder_atom_options.setVisible(tool!='fragment')
         self.builder_fragment_options.setVisible(tool=='fragment')
-        self.builder_hint.setText(HINTS.get(tool, HINTS["select"]))
+        hint = HINTS.get(tool, HINTS["select"])
+        if tool == "bond" and state.get("bondKind"):
+            hint = ("Click the donor atom, then the acceptor atom to add a dative arrow."
+                    if state["bondKind"] == "dative" else "Click two atoms to add a dashed TS contact.")
+            hint += " Geometry and hydrogens are preserved. Undo restores the previous bond."
+        self.builder_hint.setText(hint)
         self.builder_measure.setText(state.get("measurement") or "Select 2 / 3 / 4 atoms for distance / angle / dihedral.")
         self.builder_stats.setText(f"{state.get('formula', '')} · {atoms} atoms · {state.get('bonds', 0)} bonds")
         if self.builder_active:
@@ -472,11 +536,27 @@ class BuilderMixin(SketchMixin):
     def copy_selected_geometry(self):
         if not self.calculation or self.busy:
             return
+        self.send(type="copyToBuilder", xyz=self.calculation.xyz(self.step, self.display_coords),
+                  annotationKey=str(id(self.calculation)), name=f"{self.calculation.name} · geometry {self.step + 1}")
+
+    def receive_geometry_copy(self, text):
+        model = json.loads(text)
         self.inspector.setCurrentIndex(self.build_tab)
-        self.builder_command(type="copy", xyz=self.calculation.xyz(self.step, self.display_coords),
-                             name=f"{self.calculation.name} · geometry {self.step + 1}")
+        self.set_builder_mode('3d')
+        self.builder_command(type="restore", model=model)
+        self.statusBar().showMessage('Copied geometry and edited bonds into Build. Export MOL to save the bond styles.')
 
     def studio_tab_changed(self, index):
+        if self.depth_cue.isChecked():
+            self.depth_cue.setChecked(False)
+            self.send(type='fogPick', enabled=False)
+        if index == getattr(self, 'compare_tab', -1):
+            self.show_comparison()
+            self.update_builder_mode_ui()
+            return
+        was_comparison = getattr(self, 'comparison_active', False)
+        if index != 2:
+            self.comparison_active = False
         if index == 1:
             self.stop_vibration()
         if index == self.build_tab:
@@ -502,7 +582,14 @@ class BuilderMixin(SketchMixin):
             self.builder_command(type="visibility", visible=False)
             if self.calculation:
                 self.filename.setText(self.calculation.name)
-                if was_draft:
+                if was_draft or was_comparison:
+                    if was_comparison:
+                        entry = next((d for d in self.documents if d['calculation'] is self.calculation), None)
+                        if entry is not None:
+                            self.step = entry['step']
+                            self.slider.blockSignals(True)
+                            self.slider.setValue(self.step)
+                            self.slider.blockSignals(False)
                     self.select_step(self.step, fit=True)
                     self.refresh_surface(reload=True)
             else:

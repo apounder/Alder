@@ -8,6 +8,9 @@ from types import MethodType
 import numpy as np
 from cclib.io import ccopen
 from cclib.parser.utils import PeriodicTable, convertor
+from .spectra import ElectronicTransitions, read_transitions
+from .paths import ReactionPath, PathTracker, read_reaction_path, attach_irc_trajectory
+from .alignment import rigid_fit
 
 BOHR = 0.529177210903
 ELEMENTS = PeriodicTable().element
@@ -30,6 +33,8 @@ class Calculation:
     raman_activities: np.ndarray = field(default_factory=lambda: np.empty(0))  # Å^4/Da
     displacements: np.ndarray | None = None  # [mode, atom, xyz], as reported by cclib
     vibration_coords: np.ndarray | None = None
+    transitions: ElectronicTransitions | None = None
+    reaction_path: ReactionPath | None = None
 
     def xyz(self, step, coords=None):
         points = self.coords[step] if coords is None else coords[step]
@@ -52,7 +57,9 @@ def read_calculation(path):
     path = check_file(path)
     parser = ccopen(str(path), loglevel=logging.ERROR)
     if parser is None or parser.__class__.__name__ not in {"Gaussian", "ORCA"}:
-        raise ValueError("This file was not recognized as Gaussian or ORCA output.")
+        if parser is not None:
+            parser.inputfile.close()
+        raise ValueError("This file was not recognized as Gaussian or ORCA output. For ASE/Sella, open a saved .traj or .extxyz file; for geomeTRIC, open its optimization XYZ trajectory. Optimizer text logs alone may not contain coordinates.")
 
     # Record associations while cclib reads the file. Zipping the final arrays
     # can silently shift energies when an unfinished step has no energy.
@@ -60,6 +67,7 @@ def read_calculation(path):
     extract = parser.extract
     raw_points = []
     vibration_coords = None
+    path_tracker = PathTracker()
 
     def tracked_extract(_parser, stream, line):
         nonlocal raw_points, vibration_coords
@@ -67,7 +75,7 @@ def read_calculation(path):
                   for key in ("scfenergies", "geovalues")}
         before_disps = (id(getattr(parser, "vibdisps", None)), len(getattr(parser, "vibdisps", [])))
         extract(stream, line)
-        points = getattr(parser, "atomcoords", getattr(parser, "inputcoords", []))
+        points = max((getattr(parser, "atomcoords", []), getattr(parser, "inputcoords", [])), key=len)
         raw_points = points
         step = len(points) - 1
         after_disps = (id(getattr(parser, "vibdisps", None)), len(getattr(parser, "vibdisps", [])))
@@ -80,9 +88,28 @@ def read_calculation(path):
                 raise ValueError("This output resets its calculation data. Open each job separately.")
             if after > before[key] and step >= 0:
                 mapping[step] = after - 1
+        path_tracker.observe(line, step)
 
     parser.extract = MethodType(tracked_extract, parser)
-    data = parser.parse()
+    after_parsing = parser.after_parsing
+    def complete_geometries(_parser):
+        # Gaussian sometimes stops printing standard orientation during an
+        # excited-state optimization. Keep one consistent input frame instead
+        # of assigning every subsequent SCF energy to the first geometry.
+        standard = getattr(parser, 'atomcoords', [])
+        inputs = getattr(parser, 'inputcoords', [])
+        if len(inputs) > len(standard) and max(energy_steps, default=-1) >= len(standard):
+            parser.atomcoords = inputs
+        after_parsing()
+    parser.after_parsing = MethodType(complete_geometries, parser)
+    try:
+        data = parser.parse()
+    finally:
+        # cclib otherwise relies on garbage collection; our tracking callbacks
+        # retain the parser and can leave an imported file locked on Windows.
+        parser.inputfile.close()
+        del parser.extract
+        del parser.after_parsing
     if not hasattr(data, "atomcoords") or not len(data.atomcoords):
         raise ValueError("No complete molecular geometry was found in this output.")
     coords = np.asarray(data.atomcoords, dtype=float)
@@ -116,6 +143,12 @@ def read_calculation(path):
                "Termination": "Normal" if data.metadata.get("success") else "Incomplete / unknown"}
     if hasattr(data, "optdone"):
         summary["Optimization"] = "Converged" if data.optdone else "Not converged"
+    if hasattr(data, "scanenergies"):
+        summary["Scan points"] = str(len(data.scanenergies))
+    if data.metadata.get("solvent_model"):
+        summary["Solvent model"] = str(data.metadata["solvent_model"])
+    if data.metadata.get("solvent_name"):
+        summary["Solvent"] = str(data.metadata["solvent_name"])
     for attr, label in (("enthalpy", "Enthalpy / Eh"), ("freeenergy", "Gibbs energy / Eh"),
                         ("zpve", "Zero-point correction / Eh"), ("temperature", "Temperature / K")):
         if hasattr(data, attr):
@@ -161,8 +194,22 @@ def read_calculation(path):
     if vibration_coords.shape != (len(atomnos), 3) or not np.isfinite(vibration_coords).all():
         displacements = None
         vibration_coords = None
-    return Calculation(path.name, atomnos, coords, energies, data.metadata, summary, convergence, warnings,
-                       orbitals, frequencies, intensities("vibirs"), intensities("vibramans"), displacements, vibration_coords)
+    transitions = read_transitions(data, warnings)
+    if transitions is not None:
+        summary["Excited-state method"] = transitions.method
+        summary["Electronic transitions"] = str(len(transitions.energies))
+        summary["Energy profile"] = "SCF/DFT reference energies (not excited-state total energies)"
+    reaction_path, companion = read_reaction_path(data, coords, energies, path_tracker, path, warnings)
+    if reaction_path is not None:
+        summary['Job path'] = f'{reaction_path.kind} · {len(reaction_path.energies)} points'
+    calculation = Calculation(path.name, atomnos, coords, energies, data.metadata, summary, convergence, warnings,
+                       orbitals, frequencies, intensities("vibirs"), intensities("vibramans"), displacements, vibration_coords, transitions, reaction_path)
+    if companion is not None and companion.is_file():
+        try:
+            calculation = attach_irc_trajectory(calculation, check_file(companion))
+        except ValueError as error:
+            warnings.append(f'IRC trajectory was not attached: {error}')
+    return calculation
 
 
 @dataclass
@@ -241,18 +288,12 @@ def register_cube(calculation, cube):
     """Find matching step and orient the full trajectory into the cube frame."""
     if not np.array_equal(calculation.atomnos, cube.atomnos):
         raise ValueError("Cube atoms differ from the calculation. Atom identities and order must match.")
-    target_center = cube.coords.mean(axis=0)
-    target = cube.coords - target_center
     best = None
     for step, points in enumerate(calculation.coords):
-        center = points.mean(axis=0)
-        u, _, vt = np.linalg.svd((points - center).T @ target)
-        rotation = u @ np.diag([1, 1, np.linalg.det(u @ vt)]) @ vt
-        fitted = (points - center) @ rotation + target_center
-        rmsd = float(np.sqrt(np.mean(np.sum((fitted - cube.coords) ** 2, axis=1))))
+        rotation, translation, rmsd = rigid_fit(points, cube.coords)
         if best is None or rmsd < best[0]:
-            best = rmsd, step, rotation, center
-    rmsd, step, rotation, center = best
+            best = rmsd, step, rotation, translation
+    rmsd, step, rotation, translation = best
     if rmsd > 0.02:
         raise ValueError(f"Cube does not match any geometry (best RMSD {rmsd:.3f} Å; limit 0.020 Å).")
-    return step, (calculation.coords - center) @ rotation + target_center, rmsd
+    return step, calculation.coords @ rotation + translation, rmsd
