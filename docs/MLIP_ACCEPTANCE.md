@@ -2,6 +2,40 @@
 
 Validated on 2026-09-22. “Implemented” and “tested with real weights” are separate claims. Model correctness outside the reported training domain is not established by successful execution.
 
+## Guided installation: fresh CPU and CUDA checks
+
+The new shared source/terminal/desktop setup was tested on native Windows 11 x64,
+with a 20-thread Intel CPU and NVIDIA RTX 5070 (12 GB, driver 610.74). Tests used
+separate, initially empty calculation folders, not the user's working environments.
+
+| Check | Result |
+| --- | --- |
+| Source bootstrap into a new app environment | Passed: managed Python 3.14.7, desktop dependencies and terminal setup |
+| Conda environment file and installed setup command | Passed: new Conda environment, automatic NVIDIA detection and real cached CUDA checks for both public backends |
+| Freshly installed desktop smoke checks | 16 passed, including Qt WebEngine, Gaussian/ORCA import, 2D/3D editing and figure/video exports |
+| New AIMNet2 and MACE CPU environments | Passed: PyTorch 2.13.0+cpu, Sella imports, real water energy/forces |
+| New AIMNet2 and MACE CUDA environments | Passed: driver-selected PyTorch 2.13.0+cu132, GPU allocation, Sella imports, real water energy/forces |
+| AIMNet2-wB97M-D3 CUDA workflow matrix | All 14 required workflow cases completed, including TS/IRC, NEB, MD and conformers |
+| MACE-ANI-CC CUDA workflow matrix | 13 of 14 completed; reverse IRC reported `IRCInnerLoopConvergenceFailure`, retained partial results and was correctly marked unconverged |
+| Windows Python suite | 115 passed, 1 skipped (Sella absent in the desktop test interpreter); includes four isolated native walkthrough scenarios |
+| Linux setup logic tests | 16 passed, 1 skipped (Qt unavailable in that test interpreter); this is not Linux CUDA validation |
+
+CUDA numerical checks also passed: maximum water force/energy-derivative errors
+were `8.27×10⁻⁴ eV/Å` for AIMNet2 and `6.63×10⁻⁵ eV/Å` for MACE (limit `0.002`).
+Analytical/finite-difference frequency differences were `1.81 cm⁻¹` and
+`1.29 cm⁻¹`, respectively (limit `5`). The MACE IRC convergence failure is not
+counted as a full-matrix pass; readiness verifies execution, not convergence for
+every scientific calculation. See [guided setup evidence](validation/mlip-guided-setup.json).
+
+Missing-driver/no-GPU hosts, failed queries, cached access, gated denial,
+secret redaction, cancellation, CPU-to-CUDA replacement, preservation after a
+failed GPU check, and check-only behavior have automated simulated coverage.
+The real CPU tests explicitly selected CPU on the NVIDIA-equipped host.
+Real Hugging Face login/UMA weights, MACE-OFF23 weights, other GPU families,
+macOS runtime, and the rebuilt desktop installer remain unverified. None is
+included in the new pass claims. Existing downloadable executables must be
+rebuilt and tested before distributing this walkthrough.
+
 ## Job matrix
 
 The shared engine uses the selected ASE calculator without model-specific optimizer/path/dynamics implementations.
@@ -56,13 +90,13 @@ Tests are `tests/test_mlip_engine.py`, `tests/test_mlip_results.py`, `tests/test
 
 ## Desktop and packaging
 
-The real Qt desktop queue, model readiness, optimization → frequency relationship, vibration viewing, cancellation, exact MD checkpoint persistence, bounded pages, and job-history recovery have been exercised on Linux aarch64 and Windows x64. The latest Windows GUI and MLIP Offline bundles are under the ignored `dist/MoleculeStudio` and `dist/MoleculeStudio-MLIP-Offline` directories; downloads are in `dist/release`. Older generated review bundles have been removed. The installed application is unchanged and no release has been published.
+The real Qt desktop queue, model readiness, optimization → frequency relationship, vibration viewing, cancellation, exact MD checkpoint persistence, bounded pages, and job-history recovery have been exercised on Linux aarch64 and Windows x64. The 22 September 2026 validation produced Windows GUI and MLIP Offline bundles under the ignored `dist/MoleculeStudio` and `dist/MoleculeStudio-MLIP-Offline` directories, with downloads in `dist/release`. These generated files are not included in a source clone. That validation did not replace the installed application or publish a release.
 
 Packaged checks use `MoleculeStudio.exe --mlip-smoke-test REPORT PYTHON CACHE` with the external calculation interpreter and public model cache. `--smoke-test REPORT FIXTURES` exercises Gaussian/ORCA viewing, offline editing, comparison/input generation, surfaces and figure/video exports. Both packaged checks passed. The final MLIP check also created a fresh managed AIMNet2 environment through the packaged UI, then exercised real model readiness, optimization → frequencies, mode viewing, cancellation, bounded results and recovery after an actual worker termination. The saved [validation evidence](validation/mlip-acceptance.json) distinguishes these passes from unavailable configurations.
 
 Automatic setup was also verified in the updated Windows standalone executable with a **new managed Python installation and an uncached public AIMNet2 checkpoint**, using only the in-app setup action. Repeating setup reused the environment and weights. The resulting environment passed real readiness, optimization → frequencies, cancellation/checkpoint and restart-recovery checks. Five isolated Qt scenarios cover simulated login/licence branches, cancellation, retry, cache reuse and unavailable devices on both Windows and Linux. See [automatic setup evidence](validation/mlip-auto-setup.json). Real account authentication and restricted weight downloads remain pending.
 
-CUDA hardware, a real Hugging Face account login, gated UMA weights, MACE-OFF23 weights, macOS runtime and other architectures are unavailable or deliberately pending here. None are counted as passed validation. The Windows managed recipe is CPU; CUDA users can connect a matching CUDA-enabled environment and must pass both the device and actual model checks.
+Those earlier packaged checks used CPU environments and did not validate CUDA. The newer source-install CUDA checks are recorded above. Real account login, UMA/MACE-OFF23 weights and macOS runtime remain pending; none is counted as passed.
 
 The subsequent readiness fix was checked on Windows and Linux with seven focused tests, including eight isolated Qt scenarios. The rebuilt Windows executable was closed and reopened before queueing an AIMNet2 optimization: queueing automatically rechecked cached weights and submitted the captured input. Optimization → frequencies, cancellation and history recovery passed. Failed or cancelled readiness checks queue nothing. See [readiness-after-restart evidence](validation/mlip-readiness-fix.json).
 
@@ -93,5 +127,17 @@ python tests/mlip_real_models.py --backend aimnet2 --cache PATH_TO_MODEL_CACHE -
 ```
 
 Add `--numerics-only` for all nine water energy/force derivatives and the analytical/finite-difference frequency comparison. The runner fails if a required job is incomplete or a tolerance is exceeded. It never downloads weights. UMA uses the same runner after access, explicit download and environment setup; do not count missing infrastructure as a pass.
+
+Add `--device cuda` to the real-model runner when using a verified CUDA
+environment. To exercise the installer itself with public models, use an app
+environment and an explicit disposable destination (this downloads packages):
+
+```sh
+python tests/guided_setup_real.py --root .build-tools/check-cpu --models recommended --device cpu
+python tests/guided_setup_real.py --root .build-tools/check-cuda --models recommended --device cuda
+```
+
+The CUDA command requires compatible NVIDIA hardware and its driver. Each runner
+returns a nonzero status on failure. Keep test roots separate from user data.
 
 The normal GUI environment runs `python -m pytest -q` and the existing graphical smoke scripts. `tests/mlip_smoke.py` additionally accepts the `MLIP_TEST_PYTHON` and `MLIP_TEST_CACHE` environment variables for real external-worker checks. For a packaged app, use `--mlip-smoke-test REPORT PYTHON CACHE`; setting `MLIP_SMOKE_SETUP=1` also creates a fresh temporary managed AIMNet2 environment through the in-app setup path. Set `MLIP_SMOKE_AUTO_SETUP=1` instead to exercise **Set up selected model** with a new Python installation, dependencies, an uncached public AIMNet2 checkpoint, and a repeated cached setup. This uses the same smoke-test command signature; its supplied interpreter/cache are not used for the automatic-setup branch. Use a graphical session, and allow setup network access. All test databases/environments remain separate from ordinary user jobs.

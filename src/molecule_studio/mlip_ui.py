@@ -196,7 +196,7 @@ class MLIPDialog(QDialog):
         localrow=QHBoxLayout();localrow.addWidget(self.local);localrow.addWidget(button('Browse…',self.choose_local));form.addRow('Local checkpoint',localrow)
         self.manifest=QPlainTextEdit();self.manifest.setPlaceholderText('Local checkpoint capability manifest (JSON); required only for local files.');self.manifest.setMaximumHeight(90);form.addRow('Local manifest',self.manifest)
         self.domain=note('');layout.addWidget(self.domain)
-        layout.addWidget(button('Set up selected model…',lambda:self.safe(self.automatic_setup)))
+        layout.addWidget(button('Guided setup — models and CPU/GPU…',lambda:self.safe(self.guided_setup)))
         self.ack=QCheckBox('I understand the model’s chemical domain and will validate reaction-path predictions.');layout.addWidget(self.ack)
         self.job=QComboBox()
         for name,key in JOB_NAMES.items():self.job.addItem(name,key)
@@ -278,6 +278,7 @@ class MLIPDialog(QDialog):
         if hasattr(self,'setup_target'):self.setup_target.setText('Selected: '+spec['backend']+' / '+spec['name'])
         self.domain.setText(spec['domain']+'\nCorrections: '+spec['correction']+'\n'+spec.get('license','Public AIMNetCentral checkpoint.'))
         cfg=self.manager.config.get(self.backend.currentText(),{});self.device.clear();self.device.addItems(cfg.get('probe',{}).get('devices',[]) or ['cpu'])
+        if cfg.get('preferred_device') in cfg.get('probe',{}).get('devices',[]):self.device.setCurrentText(cfg['preferred_device'])
     def model_config(self):
         c=dict(backend=self.backend.currentText(),checkpoint=self.checkpoint.currentText(),device=self.device.currentText(),precision=self.precision.currentText(),
                task=self.task.text().strip() or None,head=self.head.text().strip() or None,corrections='checkpoint',domain_ack=self.ack.isChecked())
@@ -558,9 +559,9 @@ class MLIPDialog(QDialog):
         layout=self.page('Environment / models')
         offline=bundle_directory() is not None
         message=('MLIP Offline edition: CPU environments and public MACE-ANI-CC / AIMNet2 checkpoints are included. Setup unpacks them locally with automatic paths; no internet is needed. UMA and MACE-OFF23 weights are excluded and still require access/licence approval and an online download.' if offline else 'GUI edition: Python, calculator dependencies and public models download on first setup; paths are automatic. For a computer without internet, use the MLIP Offline edition. Cached models work offline.')
-        layout.addWidget(note(message+' Allow several GB of disk space per calculator. Choose a checkpoint on Calculation, then set it up here.'))
+        layout.addWidget(note(message+' Allow several GB of disk space per calculator. Use Guided setup to choose models and detect this computer’s CPU/GPU.'))
         self.setup_target=note('');layout.addWidget(self.setup_target)
-        row=QHBoxLayout();self.auto_button=button('Set up selected model',lambda:self.safe(self.automatic_setup));self.auto_button.setObjectName('primary');row.addWidget(self.auto_button)
+        row=QHBoxLayout();self.auto_button=button('Guided setup — add models / enable GPU / repair…',lambda:self.safe(self.guided_setup));self.auto_button.setObjectName('primary');row.addWidget(self.auto_button)
         self.stop_setup_button=button('Stop setup',self.stop_setup);self.stop_setup_button.setEnabled(False);row.addWidget(self.stop_setup_button);layout.addLayout(row)
         self.readiness=note('Ready to set up. No system Python, terminal or manually entered paths are needed.');layout.addWidget(self.readiness)
         self.setup_log=QPlainTextEdit();self.setup_log.setReadOnly(True);self.setup_log.setMaximumBlockCount(1000);layout.addWidget(self.setup_log)
@@ -568,12 +569,18 @@ class MLIPDialog(QDialog):
         advanced=button('Advanced setup…',lambda:self.advanced_environment.setVisible(not self.advanced_environment.isVisible()));row.addWidget(advanced);layout.addLayout(row)
         self.advanced_environment=QGroupBox('Existing environments and individual setup steps');extra=QVBoxLayout(self.advanced_environment);layout.addWidget(self.advanced_environment)
         self.environment_path=QLineEdit(self.manager.python(self.backend.currentText()));self.environment_path.setAccessibleName('Calculation Python (advanced)');extra.addWidget(self.environment_path)
-        row=QHBoxLayout();row.addWidget(button('Connect existing Python…',self.choose_python));row.addWidget(button('Create managed environment',lambda:self.safe(self.setup_environment)));row.addWidget(button('Check environment',lambda:self.safe(self.probe_environment)));extra.addLayout(row)
+        extra.addWidget(button('Set up selected checkpoint (advanced)',lambda:self.safe(self.automatic_setup)))
+        row=QHBoxLayout();row.addWidget(button('Connect existing Python…',self.choose_python));row.addWidget(button('Create CPU environment',lambda:self.safe(self.setup_environment)));row.addWidget(button('Check environment',lambda:self.safe(self.probe_environment)));extra.addLayout(row)
         row=QHBoxLayout();row.addWidget(button('Connect Hugging Face',lambda:self.safe(self.huggingface_login)));row.addWidget(button('Open UMA access page',lambda:QDesktopServices.openUrl(QUrl('https://huggingface.co/facebook/UMA'))));extra.addLayout(row)
         self.license_ack=QCheckBox('I have access and accept the selected checkpoint’s licence shown on Calculation.');extra.addWidget(self.license_ack)
         row=QHBoxLayout();row.addWidget(button('Download selected model',lambda:self.safe(lambda:self.model_action('download'))));row.addWidget(button('Check selected model',lambda:self.safe(lambda:self.model_action('check'))));extra.addLayout(row)
         self.advanced_environment.hide()
-        layout.addWidget(note('CPU is the default. CUDA is offered only after a working runtime probe; managed Windows packages currently use CPU. Hugging Face access approval and checkpoint licences remain the model owner’s requirements. Setup never queues a calculation automatically.'))
+        layout.addWidget(note('Use Guided setup to detect this computer and install or repair CPU/GPU support. CUDA requires an NVIDIA GPU and a working driver. Model access and licences remain the owner’s requirements. Setup never queues a calculation automatically.'))
+    def guided_setup(self):
+        if self.setup_busy():raise ValueError('Wait for the current setup operation to finish.')
+        from .setup_ui import SetupWizard
+        SetupWizard(self,self.manager).exec()
+        self.check_results.clear();self.backend_changed()
     def setup_busy(self):
         return self.automatic or bool(self.control_process) or bool(self.setup_task and self.setup_task.isRunning())
     def update_setup_controls(self):
@@ -606,9 +613,9 @@ class MLIPDialog(QDialog):
             managed=str(managed_python(self.manager.root,self.backend.currentText()))
             if not self.install_attempted and self.environment_path.text()==managed:
                 self.setup_environment(self.automatic_probed);return
-            self.finish_setup('Environment unavailable: '+result.get('error','; '.join(result.get('errors',[])))+' Use Advanced setup to repair it or connect a compatible environment.');return
+            self.finish_setup('Environment unavailable: '+result.get('error','; '.join(result.get('errors',[])))+' Use Guided setup to repair CPU/GPU support, or connect an existing environment in Advanced setup.');return
         if self.device.currentText() not in result['devices']:
-            self.finish_setup('Selected device is unavailable. Choose one of the probed devices on Calculation and retry.');return
+            self.finish_setup('Selected device is unavailable. Use Guided setup to install or repair GPU support, or choose CPU on Calculation.');return
         self.model_action('availability',self.automatic_available)
     def automatic_available(self,result):
         if result.get('error'):

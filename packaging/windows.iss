@@ -47,4 +47,5 @@ Name: "{group}\{#AppName}"; Filename: "{app}\MoleculeStudio.exe"; WorkingDir: "{
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\MoleculeStudio.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
+Filename: "{app}\MoleculeStudio.exe"; Parameters: "--setup"; StatusMsg: "Setting up models and calculation hardware..."; Flags: waituntilterminated skipifsilent
 Filename: "{app}\MoleculeStudio.exe"; Description: "Open {#AppName}"; Flags: nowait postinstall skipifsilent

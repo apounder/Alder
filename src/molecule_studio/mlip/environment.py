@@ -1,5 +1,6 @@
 """Explicit model downloads, reproducible environment recipe, and readiness probes."""
 import importlib.metadata
+import csv
 import json
 import os
 from pathlib import Path
@@ -8,6 +9,7 @@ import re
 import shutil
 import subprocess
 import sys
+import sysconfig
 import urllib.request
 import zipfile
 from contextlib import contextmanager
@@ -110,9 +112,53 @@ def availability(config,cache):
     return result
 
 
-def managed_python(root,backend):
+def hardware():
+    """Inspect this host without importing Torch or depending on an MLIP environment."""
+    result=dict(cpu=platform.processor() or platform.machine(),threads=os.cpu_count() or 1,
+                platform=platform.system(),architecture=platform.machine(),gpus=[],error='')
+    if sys.platform=='darwin':
+        result['note']='CUDA requires an NVIDIA GPU on Windows or Linux. Use CPU on macOS.'
+        return result
+    executable=shutil.which('nvidia-smi')
+    if not executable:
+        candidates=[Path(os.environ.get('SystemRoot','C:/Windows'))/'System32/nvidia-smi.exe',
+                    Path(os.environ.get('ProgramW6432',os.environ.get('ProgramFiles','C:/Program Files')))/'NVIDIA Corporation/NVSMI/nvidia-smi.exe',
+                    Path('/usr/lib/wsl/lib/nvidia-smi')]
+        executable=next((str(p) for p in candidates if p.is_file()),None)
+    if not executable:
+        result['note']='NVIDIA driver tools were not found. CPU is available; install an NVIDIA driver and recheck to enable CUDA.'
+        return result
+    try:
+        with external_libraries():
+            run=subprocess.run([executable,'--query-gpu=index,name,driver_version,memory.total,uuid',
+                                '--format=csv,noheader,nounits'],capture_output=True,text=True,timeout=15,
+                               env=external_environment(),creationflags=subprocess.CREATE_NO_WINDOW if sys.platform=='win32' else 0)
+        if run.returncode:raise RuntimeError((run.stderr or run.stdout).strip() or 'NVIDIA driver query failed.')
+        for row in csv.reader(run.stdout.splitlines()):
+            if len(row)!=5:raise ValueError('Unexpected NVIDIA driver response.')
+            index,name,driver,memory,ident=(v.strip() for v in row)
+            result['gpus'].append(dict(index=int(index),name=name,driver=driver,memory_mb=memory,uuid=ident))
+        if not result['gpus']:result['note']='The NVIDIA driver reported no available GPUs.'
+    except (OSError,ValueError,RuntimeError,subprocess.TimeoutExpired) as error:
+        result['error']='Could not check NVIDIA hardware: '+redact(error)
+    return result
+
+
+def choose_device(requested,info=None):
+    if requested not in ('auto','cpu','cuda'):raise ValueError('Choose auto, cpu, or cuda.')
+    if requested=='cpu':return 'cpu'
+    info=hardware() if info is None else info
+    if info.get('error'):raise ValueError(info['error']+' Recheck the driver, or choose CPU explicitly.')
+    if info['gpus']:return 'cuda'
+    if requested=='cuda':raise ValueError(info.get('note','No NVIDIA GPU was detected.')+' GPU driver help: https://www.nvidia.com/Download/index.aspx')
+    return 'cpu'
+
+
+def managed_python(root,backend,device='cpu'):
     if backend not in PACKAGES:raise ValueError('Unknown calculator backend.')
-    return Path(root)/f'env-v{ENV_VERSION}-{backend}'/('Scripts/python.exe' if sys.platform=='win32' else 'bin/python')
+    if device not in ('cpu','cuda'):raise ValueError('Unknown calculation device.')
+    suffix='-cuda' if device=='cuda' else ''
+    return Path(root)/f'env-v{ENV_VERSION}-{backend}{suffix}'/('Scripts/python.exe' if sys.platform=='win32' else 'bin/python')
 
 
 def probe(backend):
@@ -122,10 +168,15 @@ def probe(backend):
     try:
         import torch
         importlib.import_module(packages[backend]);result['devices']=['cpu']
+        result.update(torch_build=torch.__version__,torch_cuda=torch.version.cuda)
         if torch.cuda.is_available():
             try:
-                x=torch.ones(2,device='cuda');float((x*x).sum().cpu());result['devices'].append('cuda')
+                x=torch.ones(2,device='cuda');float((x*x).sum().cpu());torch.cuda.synchronize();result['devices'].append('cuda')
+                result['gpu']=torch.cuda.get_device_name()
             except Exception as error:result['errors'].append('CUDA probe failed: '+redact(error))
+        else:
+            result['cuda_error']=('This environment has CPU-only PyTorch. Use Guided setup → GPU to install CUDA support.'
+                if torch.version.cuda is None else 'CUDA packages are installed, but the NVIDIA driver/device is unavailable. Update the driver and recheck, or choose CPU.')
     except Exception as error:result['errors'].append(redact(error))
     for module in ('ase','numpy','scipy','torch','sella','rdkit','mace-torch','aimnet','fairchem-core'):
         try:result['versions'][module]=importlib.metadata.version(module)
@@ -139,7 +190,7 @@ def probe(backend):
     if result['versions'].get(expected[0])!=expected[1]:
         result['errors'].append(f'Expected {expected[0]}=={expected[1]}.');result['devices']=[]
     for name,version in [('ase','3.29.0'),('torch','2.13.0')]:
-        if result['versions'].get(name)!=version:
+        if result['versions'].get(name,'').split('+')[0]!=version:
             result['errors'].append(f'Expected {name}=={version}; use the managed recipe or a matching environment.');result['devices']=[]
     if result['versions'].get('sella')!='2.6.0':
         result['sella']=False;result['errors'].append('TS/IRC require Sella 2.6.0 with this ASE version.')
@@ -147,33 +198,46 @@ def probe(backend):
     return result
 
 
-def managed_environment(root,backend,emit=print,cancelled=lambda:False):
-    """Called by a setup thread, never by a calculation. uv owns downloads/venvs."""
-    from .offline import bundle_directory, install_environment
-    bundle=bundle_directory()
-    if bundle is not None:return install_environment(bundle,root,backend,emit,cancelled)
-    root=Path(root);python=managed_python(root,backend);env=python.parent.parent
-    def check_cancelled():
-        if cancelled():raise InterruptedError('Setup stopped; completed downloads and installation steps are retained. Run setup again to continue.')
-    check_cancelled()
-    tools=root/'tools';tools.mkdir(parents=True,exist_ok=True)
+def ensure_uv(root,emit=print):
+    """Download the pinned, digest-verified installer for this Python's architecture."""
+    tools=Path(root)/'tools';tools.mkdir(parents=True,exist_ok=True)
     windows=sys.platform=='win32';machine=platform.machine().lower()
+    if windows:machine='arm64' if sysconfig.get_platform()=='win-arm64' else 'amd64'
     tag=('win_arm64' if machine in ('arm64','aarch64') else 'win_amd64') if windows else (
         'macosx_11_0_arm64' if machine in ('arm64','aarch64') else 'macosx_10_12_x86_64') if sys.platform=='darwin' else (
         'manylinux_2_28_aarch64' if machine in ('arm64','aarch64') else 'manylinux_2_28_x86_64')
     uv=tools/('uv.exe' if windows else 'uv')
     if not uv.exists():
-        emit(f'Downloading verified uv {UV_VERSION} bootstrap…')
+        emit(f'Downloading verified uv {UV_VERSION} installer…')
         with urllib.request.urlopen(f'https://pypi.org/pypi/uv/{UV_VERSION}/json',timeout=30) as response:metadata=json.load(response)
         item=next((f for f in metadata['urls'] if f['filename'].endswith(tag+'.whl')),None)
-        if item is None:raise RuntimeError(f'No managed bootstrap for {platform.system()} {machine}; connect an existing environment.')
+        if item is None:raise RuntimeError(f'No managed installer for {platform.system()} {machine}.')
         wheel=tools/'uv.whl'
         with urllib.request.urlopen(item['url'],timeout=60) as response,wheel.open('wb') as out:shutil.copyfileobj(response,out)
-        if checksum(wheel)!=item['digests']['sha256']:raise ValueError('Bootstrap checksum failed.')
+        if checksum(wheel)!=item['digests']['sha256']:raise ValueError('Installer checksum failed.')
         with zipfile.ZipFile(wheel) as archive:
             member=next(n for n in archive.namelist() if n.endswith('/'+uv.name))
-            uv.write_bytes(archive.read(member));uv.chmod(0o755)
+            temporary=uv.with_suffix('.part')
+            temporary.write_bytes(archive.read(member));temporary.chmod(0o755)
+            os.replace(temporary,uv)
         wheel.unlink()
+    return uv
+
+
+def managed_environment(root,backend,emit=print,cancelled=lambda:False,*,device='cpu',target=None):
+    """Called by a setup thread, never by a calculation. uv owns downloads/venvs."""
+    from .offline import bundle_directory, install_environment
+    bundle=bundle_directory()
+    if bundle is not None and device=='cpu':
+        if target is None:return install_environment(bundle,root,backend,emit,cancelled)
+        return install_environment(bundle,root,backend,emit,cancelled,target=target)
+    if device not in ('cpu','cuda'):raise ValueError('Choose CPU or CUDA before installing.')
+    if device=='cuda':choose_device('cuda')
+    root=Path(root);python=managed_python(root,backend,device) if target is None else Path(target);env=python.parent.parent
+    def check_cancelled():
+        if cancelled():raise InterruptedError('Setup stopped; completed downloads and installation steps are retained. Run setup again to continue.')
+    check_cancelled()
+    windows=sys.platform=='win32';uv=ensure_uv(root,emit)
     process_env=external_environment()
     process_env.update(UV_PYTHON_INSTALL_DIR=str(root/'python'),UV_CACHE_DIR=str(root/'package-cache'))
     def command(args,required=True):
@@ -186,11 +250,17 @@ def managed_environment(root,backend,emit=print,cancelled=lambda:False):
             for line in process.stdout:emit(redact(line.rstrip()))
             code=process.wait()
         check_cancelled()
-        if code and required:raise RuntimeError('Environment setup failed; see the setup log. You can connect an existing compatible Python environment.')
+        if code and required:
+            remedy=('Update your NVIDIA driver and retry Guided setup, or select CPU.' if device=='cuda' else
+                    'Check your connection and free disk space, then rerun Guided setup.')
+            raise RuntimeError('Environment setup failed; see the setup log. '+remedy)
         return code
     if not python.exists():command([uv,'venv','--managed-python','--python',PYTHON_VERSION,env])
-    command([uv,'pip','install','--python',python,*COMMON,*PACKAGES[backend]])
-    sella_code=command([uv,'pip','install','--python',python,'sella==2.6.0'],required=False)
+    # uv chooses the official CUDA wheel index from this host's driver. CPU is
+    # explicit, including on Linux where PyPI's default Torch can include CUDA.
+    runtime=['--torch-backend','auto' if device=='cuda' else 'cpu']
+    command([uv,'pip','install','--python',python,*runtime,*COMMON,*PACKAGES[backend]])
+    sella_code=command([uv,'pip','install','--python',python,*runtime,'sella==2.6.0'],required=False)
     if sella_code:emit('Sella build failed. TS/IRC require a compatible C/C++ compiler or a preconfigured environment; other jobs can be checked independently.')
     with external_libraries():
         process=subprocess.Popen([str(uv),'pip','freeze','--python',str(python)],stdout=subprocess.PIPE,text=True,creationflags=subprocess.CREATE_NO_WINDOW if windows else 0,env=process_env)

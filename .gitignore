@@ -1,5 +1,7 @@
 .venv/
 .venv-build/
+.venv-local/
+condaenv.*.requirements.txt
 .build-tools/
 .runtime/
 __pycache__/

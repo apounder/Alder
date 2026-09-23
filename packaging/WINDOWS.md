@@ -4,9 +4,10 @@ Windows releases provide **GUI** and **MLIP Offline** editions, each as an x64 i
 workflow checks the application, installation, and uninstall behavior before
 uploading the downloads.
 
-Local downloads are in `dist/release`. To publish the already-built files,
-attach the installer, ZIP, and checksums to a GitHub Release after publishing
-the source repository. You do not have to rebuild just to try this local app.
+After a successful local build, downloads are in `dist/release`. Generated
+installers are not included in a source clone. To publish the built files,
+attach the installer, ZIP, and checksums to a GitHub Release. To try an existing
+build, download its installer or portable ZIP; rebuilding is unnecessary.
 
 ## Build with GitHub's website — no local command line
 
@@ -53,12 +54,19 @@ output are excluded from source control.
 - A `START-HERE.txt`, dependency build information, and third-party notices.
 - MLIP Offline additionally contains a standalone Python 3.12 runtime, exact hashed wheel sets for MACE/AIMNet2/UMA CPU environments, and five public checkpoints: MACE-ANI-CC plus AIMNet2 wB97M-D3, B97-3c-2025, NSE and rxn (member 0).
 
-Public-model first setup in the offline edition installs only local files. No
+Public-model first setup with **CPU** selected in the offline edition installs only local files. No
 system Python or internet is needed. Environments are recreated at their final
 paths, avoiding paths from the build computer. UMA/MACE-OFF23 weights are excluded;
 access/licence approval and a subsequent online download remain necessary.
 The offline kit excludes credentials, user jobs and configuration. CUDA and
 macOS/Linux offline kits are not part of this Windows build.
+
+New builds run `MoleculeStudio.exe --setup` during interactive installation;
+silent installs skip prompts. A fresh portable launch also offers the same wizard.
+It detects the destination computer, checks account access, and installs selected
+models. CUDA uses online driver-selected packages, not the bundled CPU wheels.
+Existing release downloads must be rebuilt to include this behavior; the new
+installer/wizard combination still needs packaged interactive acceptance testing.
 
 The installer does not claim `.log` or `.out` file associations. Open/drop files
 inside Studio. It does not modify or uninstall your calculation files. No

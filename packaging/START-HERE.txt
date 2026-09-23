@@ -1,12 +1,13 @@
 MOLECULE STUDIO FOR WINDOWS
 
 Portable ZIP: right-click the ZIP, choose Extract All, open the extracted
-MoleculeStudio folder, and double-click MoleculeStudio.exe.
+MoleculeStudio or MoleculeStudio-MLIP-Offline folder, and double-click
+MoleculeStudio.exe.
 Keep the _internal folder next to the executable. For MLIP Offline, also keep
 the complete mlip-offline folder. Do not run from inside the ZIP.
 
 Installer: double-click MoleculeStudio-<version>-Windows-x64-<edition>-Setup.exe and
-follow the installation window. Open Molecule Studio from the Start menu.
+follow the installation and model-setup windows. Open Molecule Studio from the Start menu.
 Installation is for your Windows account and does not require administrator
 rights. Remove it through Windows Settings > Apps > Installed apps.
 
@@ -18,13 +19,19 @@ DOWNLOAD EDITIONS
 GUI: viewer/editor and exports work offline. Local MLIP setup downloads its
 calculation environment and public models when requested.
 MLIP Offline: includes CPU environments for MACE, AIMNet2 and UMA, plus public
-MACE-ANI-CC and four AIMNet2 models. Open Local MLIP, select the model, and click
-Set up selected model. Setup uses bundled files and configures paths for you.
+MACE-ANI-CC and four AIMNet2 models. In Guided setup, choose models and CPU to
+install from bundled files. Setup configures paths and checks calculations for you.
 Allow several GB of free disk space per calculator.
 
 UMA and MACE-OFF23 weights are not included. Those still need model access or
-licence acknowledgement and an online download. No account credentials or CUDA
-runtime is included. Both editions have the same application features.
+licence acknowledgement and an online download. The bundles include neither
+account credentials nor a CUDA runtime. Both editions have the same application
+features.
+Guided setup detects each computer's CPU and NVIDIA GPU. CUDA setup needs an
+internet connection and a compatible NVIDIA driver. Reopen Local MLIP >
+Environment / models > Guided setup to add models or repair CPU/GPU support.
+UMA access and licence prompts appear before calculator downloads. A token alone
+does not grant access to gated models; public models need no account.
 Switching editions preserves separate calculation caches and job history.
 
 Target: 64-bit Windows 10 (1809+) / Windows 11 with working graphics drivers.

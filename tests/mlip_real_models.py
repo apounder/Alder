@@ -33,9 +33,9 @@ def numerical_checks(ctx):
 
 
 def main():
- p=argparse.ArgumentParser();p.add_argument('--backend',choices=['mace','aimnet2','uma'],required=True);p.add_argument('--cache',required=True);p.add_argument('--output',required=True);p.add_argument('--numerics-only',action='store_true');args=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('--backend',choices=['mace','aimnet2','uma'],required=True);p.add_argument('--cache',required=True);p.add_argument('--output',required=True);p.add_argument('--numerics-only',action='store_true');p.add_argument('--device',choices=['cpu','cuda'],default='cpu');args=p.parse_args()
  name={'mace':'MACE-ANI-CC','aimnet2':'aimnet2-wb97m-d3_0','uma':'uma-s-1p2'}[args.backend]
- config=dict(backend=args.backend,checkpoint=name,device='cpu',precision='float64' if args.backend=='mace' else 'float32',task='omol' if args.backend=='uma' else None,head=None,domain_ack=True,corrections='checkpoint')
+ config=dict(backend=args.backend,checkpoint=name,device=args.device,precision='float64' if args.backend=='mace' else 'float32',task='omol' if args.backend=='uma' else None,head=None,domain_ack=True,corrections='checkpoint')
  out=Path(args.output);out.mkdir(parents=True,exist_ok=True);store=Store(out/'jobs.sqlite');results={}
  water=dict(name='water',numbers=[8,1,1],positions=[[0,0,0],[.96,0,0],[-.24,.93,0]],charge=0,multiplicity=1)
  calc,provenance=create(snapshot(water,config,'sp'),args.cache)

@@ -9,7 +9,7 @@ description = "Offline desktop molecular viewer and editor for Gaussian, ORCA, s
 requires-python = ">=3.11"
 dependencies = [
     "cclib @ git+https://github.com/cclib/cclib.git@f90be37ffa1ab4cfec97495bdd01d670ca329f17",
-    "numpy>=2", "PySide6>=6.8,<7", "matplotlib>=3.9", "Pillow>=11", "ase==3.29.0",
+    "numpy>=2", "PySide6>=6.8,<7", "matplotlib>=3.9", "Pillow>=11", "ase==3.29.0", "huggingface-hub==0.36.0",
     "rdkit==2025.3.6; sys_platform == 'darwin' and platform_machine == 'x86_64'",
     "rdkit==2026.3.6; sys_platform != 'darwin' or platform_machine != 'x86_64'",
 ]
@@ -19,6 +19,9 @@ dev = ["pytest>=8"]
 
 [project.gui-scripts]
 molecule-studio = "molecule_studio.launcher:main"
+
+[project.scripts]
+molecule-studio-setup = "molecule_studio.setup_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

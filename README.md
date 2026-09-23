@@ -35,29 +35,251 @@ are processed locally.
 
 ## Installation
 
-Download a platform-specific package from **Releases** when available.
-Standalone packages require no system Python, npm or local server. Windows has
-two editions with the same viewer/editor and calculation interface:
+Choose one route below. Each installs the desktop app and provides a walkthrough
+for model selection, CPU/GPU setup, and any required Hugging Face access.
+Calculation environments and downloaded models are saved for future launches.
 
-| Windows download | Contents |
+| How you want to install | Start here | What you need first |
+| --- | --- | --- |
+| Download a desktop app | [Windows installer or portable download](#1-desktop-download) | A matching release, when available |
+| You already use Anaconda or Miniforge | [Conda](#2-conda) | Conda and an extracted or cloned copy of this repository |
+| Download GitHub's source ZIP | [Source ZIP](#3-source-zip) | Python 3.11 or newer and Git (for a dependency) |
+| Clone with Git | [Git](#4-git-clone) | Git and Python 3.11 or newer |
+
+For first-time model setup, use an internet connection and allow several GB of
+free disk space per calculator. CUDA packages need additional space. Public
+AIMNet2 and MACE-ANI-CC models need no account. UMA requires Hugging Face access;
+MACE-OFF23 requires licence acknowledgement.
+
+“All models” means the supported catalogue: four AIMNet2 checkpoints, MACE-ANI-CC,
+three MACE-OFF23 sizes, and UMA-s-1p2. Other MLIP families need an integration;
+arbitrary Hugging Face models are not automatically compatible.
+
+### 1. Desktop download
+
+Open [GitHub Releases](https://github.com/apounder/molecule-studio/releases) and
+choose the download for your computer. **If no matching release is available,
+use the Conda or source instructions below.** A source ZIP is not a desktop installer.
+
+On Windows 10 (1809+) or Windows 11, download the x64 **Setup.exe**, open it,
+and follow the installation and model setup windows. Then open **Molecule Studio**
+from the Start menu. Python, Conda, Git, and Node.js are not required.
+
+Alternatively, download a **Portable.zip**, right-click it, choose **Extract All**,
+and open `MoleculeStudio.exe` inside the extracted folder. Keep `_internal` beside
+the executable and, if included, the complete `mlip-offline` folder. Do not run
+the executable from inside the ZIP.
+
+| Windows edition | What is included |
 | --- | --- |
-| **GUI** | Smaller download. Viewing, editing and exports work offline. MLIP runtimes and models download through the app when requested. |
-| **MLIP Offline** | Includes CPU environments for MACE, AIMNet2 and UMA, plus MACE-ANI-CC and four public AIMNet2 checkpoints. Setup installs the selected environment locally without internet. |
+| **GUI** | Viewer, editors, and exports. The walkthrough downloads your selected calculation environments and weights. |
+| **MLIP Offline** | The same app, plus CPU environments and five public checkpoints. These can be set up without internet. GPU setup needs an online CUDA download; UMA and MACE-OFF23 weights are not included. |
 
-Both editions configure Python and cache paths automatically. UMA and MACE-OFF23
-**weights are excluded**; they still require access/licence approval and an online
-download. The offline edition is currently Windows x64 only. GitHub's **Source
-code** archives are not installers.
+The guided installer described here requires a release built from this version
+of the source. Older downloads may only have the earlier **Set up selected model**
+screen. A fresh portable launch also offers the walkthrough. Existing users can
+open **Local MLIP → Environment / models → Guided setup** at any time.
 
-| Platform | Installation |
+macOS downloads are experimental: choose the matching Apple Silicon or Intel DMG,
+drag **Molecule Studio** into **Applications**, and open it. Use CPU for calculations;
+CUDA requires NVIDIA hardware on Windows or Linux. See the
+[macOS guide](packaging/MACOS.md) for current validation and first-launch details.
+Linux users should use Conda or source installation and have a graphical session
+with the system libraries required by Qt WebEngine.
+
+Windows builds are unsigned; macOS builds are not Apple-notarized.
+
+### 2. Conda
+
+Download this repository using **Code → Download ZIP** and extract it, or clone it
+with Git. Open Anaconda Prompt or a terminal where `conda` works, then change to
+the extracted `molecule-studio` or `molecule-studio-main` folder.
+
+Run these commands one at a time; continue after each succeeds:
+
+```sh
+conda env create -f environment.yml
+conda activate molecule-studio
+molecule-studio-setup
+```
+
+The first command installs Python, Git, and the desktop dependencies in their own
+environment. The last command walks through all selected model installations.
+There is no need to find model Python paths or install PyTorch yourself.
+
+For later launches:
+
+```sh
+conda activate molecule-studio
+molecule-studio
+```
+
+If you already created this Conda environment using the previous instructions,
+update the app from the repository folder and start the new walkthrough:
+
+```sh
+conda activate molecule-studio
+python -m pip install --upgrade .
+molecule-studio-setup
+```
+
+This route uses the repository's `environment.yml`. A published
+`conda install molecule-studio` package is not currently provided.
+
+### 3. Source ZIP
+
+1. Install [Python](https://www.python.org/downloads/) 3.11 or newer if needed.
+   On Windows, enable **Add Python to PATH**, then reopen your terminal.
+2. Install [Git](https://git-scm.com/downloads) and reopen your terminal. The pinned
+   cclib parser needs Git even when Studio itself comes from a ZIP. If you prefer
+   not to install these prerequisites separately, use the Conda route above.
+3. On the GitHub repository page, choose **Code → Download ZIP**, then extract it.
+4. Open a terminal in the extracted folder containing `install.py` and run:
+
+```powershell
+python install.py
+```
+
+On macOS or Linux, use `python3 install.py` if your Python command is `python3`.
+Setup creates a local `.venv`, downloads a suitable app Python when needed,
+installs the desktop dependencies, and starts the model walkthrough. You do not
+need to activate `.venv`. The pinned cclib source is downloaded automatically
+using Git. Node.js and npm are not needed for this route.
+
+Launch later from that folder on Windows:
+
+```powershell
+.\.venv\Scripts\python.exe -m molecule_studio
+```
+
+Or on macOS/Linux:
+
+```sh
+./.venv/bin/python -m molecule_studio
+```
+
+### 4. Git clone
+
+Run these commands in PowerShell, Anaconda Prompt, or your terminal:
+
+```sh
+git clone https://github.com/apounder/molecule-studio.git
+cd molecule-studio
+python install.py
+```
+
+On macOS/Linux, use `python3 install.py` if needed. Cloning downloads the source;
+`install.py` installs the app and starts the walkthrough. Later launch commands
+are the same as for the source ZIP above.
+
+## The setup walkthrough
+
+The terminal and desktop walkthroughs use the same setup code and model cache.
+
+1. **Choose models.** Select individual checkpoints, the recommended public models,
+   or all supported models. The terminal also accepts backend names such as
+   `aimnet2`. Choose `none`, or uncheck all models in the GUI, for the viewer only.
+2. **Choose hardware.** Automatic mode checks the current computer for an NVIDIA
+   GPU and driver. You can explicitly choose CPU or CUDA. A failed hardware scan
+   gives an error and a recheck/CPU choice.
+3. **Connect Hugging Face when required.** Setup explains which selected models
+   need an account and checks access before downloading their calculation packages.
+4. **Install and verify.** Setup installs the selected dependencies, downloads
+   weights, and runs a real energy/force calculation on the selected device.
+   A model is marked ready only after that check passes.
+
+For UMA, open the [model access page](https://huggingface.co/facebook/UMA), sign in,
+and request/accept the required access. Create a
+[read token](https://huggingface.co/settings/tokens) permitted to read the model,
+then paste it into setup's hidden token field. Existing Hugging Face logins are
+reused. A valid token does not itself grant gated-model approval. Setup reports
+access problems and retains successfully installed models so you can retry later.
+
+Tokens are handled by the official Hugging Face client and are not saved in job
+records or setup reports. Public models and verified cached weights do not require
+a new login. You are asked to acknowledge restricted checkpoint licences before
+downloading them; choosing “all” does not bypass those requirements.
+
+## CPU and NVIDIA GPU support
+
+Hardware detection runs on **each computer during setup**, independently of any
+existing model environment. CPU setup explicitly requests CPU PyTorch packages.
+CUDA setup asks the package manager to select the official CUDA build for that
+computer's driver, then verifies GPU allocation and the actual model calculation.
+See [uv's PyTorch integration](https://docs.astral.sh/uv/guides/integration/pytorch/)
+for the underlying package selection mechanism.
+
+| Your hardware | Calculation choice |
 | --- | --- |
-| Windows 10 (1809+) / 11, x64 | Run the setup executable, or extract the portable ZIP and open `MoleculeStudio.exe`. Keep all extracted folders beside it, including `_internal` and `mlip-offline` when supplied. |
-| macOS 15+, Apple Silicon or Intel | Experimental packaging. Choose the matching DMG and drag **Molecule Studio** into **Applications**. |
-| Linux | Install from source as described below. |
+| Windows/Linux with a supported NVIDIA GPU and driver | Automatic or CUDA; CPU remains available |
+| Windows/Linux without a working NVIDIA GPU | CPU |
+| macOS, or AMD/Intel graphics without NVIDIA CUDA | CPU; Apple GPU/ROCm acceleration is not implemented |
 
-Windows builds are unsigned. macOS builds are not Apple-notarized, and Mac
-validation is pending. Build and first-launch instructions:
-[Windows](packaging/WINDOWS.md) · [macOS](packaging/MACOS.md).
+A compatible NVIDIA driver is required. Setup handles the application packages;
+if the driver is missing or outdated, use the
+[official NVIDIA driver download](https://www.nvidia.com/Download/index.aspx),
+restart if requested, and recheck. Installing a separate CUDA Toolkit is not part
+of the normal setup. Older GPUs, incompatible drivers, or unavailable package
+builds may require CPU. GPU memory also limits molecule size. Real hardware test
+results and remaining limits are listed in [MLIP acceptance](docs/MLIP_ACCEPTANCE.md).
+
+**If you previously installed CPU-only packages:** open **Local MLIP → Environment /
+models → Guided setup**, choose **NVIDIA graphics card (CUDA)**, and continue.
+Or, in your activated Conda/app environment, run:
+
+```sh
+molecule-studio-setup --device cuda
+```
+
+The walkthrough creates a replacement when needed, reuses cached model weights,
+and registers the replacement only after a successful calculation. Existing jobs
+and the previous environment are retained. Close the GUI before running terminal
+setup, or use Guided setup inside the GUI.
+
+## Add models, repair, or resume later
+
+In an activated app environment:
+
+```sh
+molecule-studio-setup
+molecule-studio-setup --models all --device auto
+molecule-studio-setup --repair --device cuda
+molecule-studio-setup --check
+```
+
+For the source installer on Windows, use
+`.\.venv\Scripts\python.exe -m molecule_studio setup` with the same options;
+on macOS/Linux, use `./.venv/bin/python -m molecule_studio setup`.
+If a command is not on PATH, `python -m molecule_studio setup` also works inside
+the activated app environment.
+
+Repeat setup after an interruption. Completed environments and verified weights
+are reused; failed models remain clearly identified. Cancel may wait for the
+current package installation to finish. Use **Repair** for a broken environment.
+Use **Check** to verify existing packages and weights without downloading them.
+Reopening the app does not reinstall models.
+
+For unattended public-model setup, explicitly provide the choices:
+
+```sh
+molecule-studio-setup --models recommended --device cpu --non-interactive
+```
+
+Restricted-model automation can use an existing Hugging Face login or `HF_TOKEN`,
+and `--accept-license CHECKPOINT` for each licence you have reviewed and accepted.
+Never put a token in a command argument. Incomplete setup returns a nonzero exit
+status; it does not report failed or inaccessible models as ready.
+
+### Common setup problems
+
+| What you see | What to do |
+| --- | --- |
+| `py` is not recognized | Use `python install.py`; these instructions do not require the Windows `py` launcher. |
+| `python` or `git` is not recognized | Install the prerequisite, reopen your terminal, and retry, or use the Conda route. |
+| `.venv\Scripts\python.exe` does not exist | The app installation did not finish. Rerun `python install.py` and resolve its first error. |
+| GPU detected but CUDA check fails | Update the NVIDIA driver, reopen Guided setup and choose CUDA/Repair; CPU is also available. |
+| Hugging Face returns access denied | Check model approval and token permissions; a valid token alone is not approval. Other public models do not need it. |
+| An interrupted or failed model installation | Rerun setup; use Repair for a damaged environment or checksum failure. Keep the cached models and job folder. |
 
 ## Usage
 
@@ -113,18 +335,14 @@ multiplicity, method, basis, solvent, resources, and additional keywords are
 editable. ORCA memory per process uses 80% of the entered total memory budget.
 The app prepares inputs; running calculations requires the corresponding engine.
 
-**Local MLIP** runs calculations in separate, versioned environments. Select a
-backend/checkpoint and click **Set up selected model**. The app installs Python
-and dependencies, manages all paths, prepares the checkpoint and checks it.
-The MLIP Offline edition uses its bundled files for public models; the GUI
-edition downloads them on first setup.
-It prompts for Hugging Face access or licence acknowledgement when required.
-Then capture a structure and queue a job. Cached models work offline. An existing
-Python environment can still be connected under **Advanced setup**; no path entry
-is needed for the automatic workflow. Public MACE-ANI-CC and AIMNet2
-were tested on Windows and Linux CPU. UMA and MACE-OFF23 weight validation remain
-pending access/licence approval. Follow the [MLIP guide](docs/MLIP.md) for job
-settings, constraints, continuation and platform limits.
+**Local MLIP** runs calculations in separate, reusable environments. Use **Guided
+setup** to select models, configure CPU/CUDA, and supply required access. Then
+capture a structure and queue a job. Cached models work offline. Existing Python
+environments and compatible local checkpoints remain available under **Advanced
+setup**. Public MACE-ANI-CC and AIMNet2 have real Windows CPU/CUDA checks and
+historical Linux CPU checks. UMA and MACE-OFF23 weight validation remain pending
+access/licence approval. Follow the [MLIP guide](docs/MLIP.md) for job settings,
+constraints, continuation and platform limits.
 
 Saved ASE/Sella trajectories and geomeTRIC optimization XYZ can also be opened
 without running a model. Energies are converted to Hartree for the existing

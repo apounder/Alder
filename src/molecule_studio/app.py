@@ -723,6 +723,12 @@ class Window(ComparisonMixin, ExportMixin, ResultsMixin, BuilderMixin, QMainWind
 def main():
     app = QApplication(sys.argv)
     configure_app(app)
+    from .mlip.setup import data_root, read_json
+    setup_root = data_root()
+    setup_state = read_json(setup_root / 'setup-state.json')
+    if (setup_state and not setup_state.get('completed')) or (not setup_state and not (setup_root / 'environments.json').exists()):
+        from .setup_ui import SetupWizard
+        SetupWizard().exec()
     window = Window()
     window.show()
     paths = [Path(arg) for arg in sys.argv[1:]]

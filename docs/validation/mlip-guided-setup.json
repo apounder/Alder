@@ -1,0 +1,80 @@
+{
+  "date": "2026-09-22",
+  "scope": "Source installation and shared guided setup; not a rebuilt or published desktop release",
+  "platform": "Windows 11 x64",
+  "hardware": {
+    "cpu_logical_threads": 20,
+    "gpu": "NVIDIA GeForce RTX 5070",
+    "gpu_memory_mib": 12227,
+    "driver": "610.74"
+  },
+  "source_bootstrap": {
+    "fresh_app_environment": true,
+    "inherits_system_site_packages": false,
+    "python": "3.14.7",
+    "desktop_dependencies_installed": true,
+    "terminal_setup_completed": true,
+    "desktop_smoke_checks_passed": 16,
+    "desktop_smoke_exit_code": 0
+  },
+  "conda_installation": {
+    "environment_file": "environment.yml",
+    "isolated_prefix": true,
+    "environment_creation_exit_code": 0,
+    "installed_console_setup_exit_code": 0,
+    "automatic_device": "cuda",
+    "cached_mace_and_aimnet_real_checks": "passed"
+  },
+  "fresh_calculation_environments": {
+    "python": "3.12.14",
+    "uv": "0.12.17",
+    "cpu": {
+      "torch": "2.13.0+cpu",
+      "aimnet2_wb97m_d3_0_energy_forces": "passed",
+      "mace_ani_cc_energy_forces": "passed",
+      "sella_import_both_environments": "passed"
+    },
+    "cuda": {
+      "torch": "2.13.0+cu132",
+      "runtime_selected_from_host_driver": true,
+      "allocation_both_environments": "passed",
+      "aimnet2_wb97m_d3_0_energy_forces": "passed",
+      "mace_ani_cc_energy_forces": "passed",
+      "sella_import_both_environments": "passed"
+    }
+  },
+  "cuda_real_workflows": {
+    "aimnet2_wb97m_d3_0": {
+      "required_cases_completed": 14,
+      "required_cases_total": 14,
+      "maximum_force_derivative_error_ev_per_angstrom": 0.0008262023329734802,
+      "maximum_frequency_difference_cm1": 1.8035675651281053,
+      "runner_exit_code": 0
+    },
+    "mace_ani_cc": {
+      "required_cases_completed": 13,
+      "required_cases_total": 14,
+      "unconverged": ["irc_both"],
+      "irc_event": "IRC reverse: IRCInnerLoopConvergenceFailure",
+      "partial_results_retained": true,
+      "maximum_force_derivative_error_ev_per_angstrom": 0.00006621827295597016,
+      "maximum_frequency_difference_cm1": 1.2852505982737057,
+      "runner_exit_code": 1
+    }
+  },
+  "automated_tests": {
+    "windows_full_suite_passed": 115,
+    "windows_full_suite_skipped": 1,
+    "native_guided_walkthrough_cases": 4,
+    "linux_setup_logic_passed": 16,
+    "linux_setup_logic_skipped_without_qt": 1,
+    "hardware_variants_and_gated_access_are_simulated_in_unit_tests": true
+  },
+  "not_validated": [
+    "Live Hugging Face account authentication",
+    "UMA and MACE-OFF23 weights",
+    "Other CUDA hardware and drivers",
+    "Linux CUDA and macOS runtime",
+    "Rebuilt desktop installer with guided setup"
+  ]
+}

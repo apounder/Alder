@@ -43,7 +43,7 @@ def extract_python(archive, target, cancelled):
             z.extract(item,target)
 
 
-def install_environment(directory, root, backend, emit=print, cancelled=lambda:False):
+def install_environment(directory, root, backend, emit=print, cancelled=lambda:False, *, target=None):
     from .environment import ENV_VERSION, managed_python, external_environment, external_libraries
     if sys.platform!='win32' or sysconfig.get_platform()!='win-amd64':
         raise ValueError('This offline calculation bundle requires Windows x64 (including x64 emulation).')
@@ -81,7 +81,7 @@ def install_environment(directory, root, backend, emit=print, cancelled=lambda:F
                 if process.poll() is None:process.terminate();process.wait(timeout=30)
                 log.seek(0);emit(log.read().decode('utf-8','replace'))
             if code:raise RuntimeError('Offline environment installation failed. See the setup log; no online fallback was attempted.')
-    python=managed_python(root,backend);env=python.parent.parent
+    python=managed_python(root,backend) if target is None else Path(target);env=python.parent.parent
     # uv writes pyvenv.cfg and scripts at the final path; a copied venv would
     # retain the build machine's absolute interpreter/entry-point paths.
     if not python.is_file():command([uv,'venv','--offline','--no-config','--no-python-downloads','--python',runtime/'python.exe',env])

@@ -8,6 +8,7 @@ see cclib-LICENSE.txt):
 They can also be opened in the application as examples.
 
 Frequency fixtures (same cclib BSD license):
+
 - gaussian-freq.log: https://github.com/cclib/cclib/blob/master/data/Gaussian/basicGaussian16/dvb_ir.out
 - orca-freq.out: https://github.com/cclib/cclib/blob/master/data/ORCA/basicORCA5.0/dvb_ir.out
 

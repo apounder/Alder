@@ -1,7 +1,8 @@
 # Molecule Studio: capabilities
 
-**Reviewed:** 22 September 2026  
-**Source baseline:** desktop project version `0.4.0`, including the measurement and local MLIP changes currently in the working tree.
+**Reviewed:** 22 September 2026
+
+**Source baseline:** desktop project version `0.4.0`, including the measurement and local MLIP features.
 
 This document describes the current source implementation. Its earlier MLIP planning sections have been replaced with the implemented workflow and verified limits. A previously built installer does not include subsequent source changes. See [MLIP setup](docs/MLIP.md) and the [model/job acceptance matrix](docs/MLIP_ACCEPTANCE.md) for the detailed calculation contract and validation status.
 
@@ -391,7 +392,7 @@ The former sign mismatch is resolved. Viewer measurements, input setup, path hel
 
 ## 14. Local MLIP workflows
 
-The desktop includes separate UMA/FAIR-Chem, MACE and AIMNet2 adapters with explicit checkpoints, local-file manifests, charge/spin/domain validation, device/precision readiness checks and recorded correction settings. **Set up selected model** automates managed Python/dependency installation, paths, device probing, checkpoint preparation and a real readiness calculation. The offline edition installs the selected environment from its bundled files and copies verified public weights; its public-model setup does not need a network connection. It reuses valid caches, prompts for restricted model access/licence acknowledgement and missing Hugging Face credentials, and supports stopping/retrying setup. Advanced controls can connect an existing environment. Downloads are explicit and checksummed. Hugging Face login uses the official client and keeps credentials out of calculation records.
+The desktop includes separate UMA/FAIR-Chem, MACE and AIMNet2 adapters with explicit checkpoints, local-file manifests, charge/spin/domain validation, device/precision readiness checks and recorded correction settings. **Guided setup** shares installation logic with `molecule-studio-setup`: select multiple checkpoints, detect the destination computer's CPU/NVIDIA hardware, check Hugging Face access, install CPU or driver-selected CUDA packages, and verify real energy/forces. Safe repair keeps the registered environment until its replacement passes a real model check. The offline edition uses bundled environments and public weights when CPU is selected; CUDA setup needs online packages. Valid caches are reused, stopping/retrying is supported, and advanced controls can connect an existing environment. Downloads are explicit and checksummed. Hugging Face uses the official credential cache, not calculation records.
 
 Implemented job types are single point with full forces; ASE BFGS/L-BFGS/FIRE optimization; frozen/bond/angle/dihedral constrained optimization; analytical/autodifferentiated or finite-difference frequencies; optimization followed by frequencies; relaxed 1D/2D scans; Sella TS refinement and frequency verification; Sella IRC with optional endpoint optimization; NEB/CI-NEB with linear/IDPP initialization; velocity-Verlet NVE and Langevin NVT; and RDKit conformer sampling followed by MLIP optimization, clustering and ranking.
 
@@ -404,9 +405,9 @@ See [MLIP.md](docs/MLIP.md) for exact algorithms, settings, traversal, units, da
 - Public MACE-ANI-CC and AIMNet2-wB97M-D3 member 0 completed every required workflow on Linux aarch64 and Windows x64 CPU. Reaction-path integration checks do not establish a checkpoint's scientific accuracy outside its training domain.
 - UMA adapter and FAIR-Chem environment interfaces are implemented and import-checked; real weights/jobs remain pending gated access. MACE-OFF23 weight tests remain pending licence authorization. These are not counted as passed.
 - Periodic workflows, constrained TS/IRC/NEB, electronic excited-state prediction, external dispersion stacking and UMA isolated-atom references are not supported. Missing orbitals, densities, IR/Raman intensities and electronic spectra are never synthesized.
-- CUDA, macOS MLIP runtime and live Hugging Face account authentication remain unverified. A compatible environment can be connected, but a real selected-device model check is required.
+- Fresh CPU/CUDA installs and real public-model checks passed on Windows with an RTX 5070. AIMNet2 completed the CUDA workflow matrix; MACE completed all cases except an unconverged reverse IRC. Other GPUs, macOS MLIP runtime and live Hugging Face account authentication remain unverified. See the acceptance record for exact scope.
 - Conformer sampling is not a global-minimum guarantee. Deduplication retains atom mapping without symmetry permutations.
 - MD output is streamed and paged. Existing movie export operates on the loaded page/band; unbounded full-MD movie assembly is not automatic.
-- Current Windows downloads are built as GUI and MLIP Offline editions. Older generated bundles are removed; the installed application is unchanged. Changes remain uncommitted and unpushed for review, and no release is published.
+- Windows builds produce GUI and MLIP Offline editions. Generated bundles are excluded from source control and are not included in a source clone. The recorded 22 September 2026 validation did not replace the installed application or publish a release.
 
 The [acceptance matrix](docs/MLIP_ACCEPTANCE.md) distinguishes implemented algorithms, independent numerical tests, real-model checks and unavailable infrastructure.
