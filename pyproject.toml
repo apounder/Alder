@@ -3,7 +3,7 @@ requires = ["setuptools>=75"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "molecule-studio"
+name = "alder-molecular"
 version = "0.4.0"
 description = "Offline desktop molecular viewer and editor for Gaussian, ORCA, structures, and cube fields"
 requires-python = ">=3.11"
@@ -18,16 +18,16 @@ dependencies = [
 dev = ["pytest>=8"]
 
 [project.gui-scripts]
-molecule-studio = "molecule_studio.launcher:main"
+alder = "alder.launcher:main"
 
 [project.scripts]
-molecule-studio-setup = "molecule_studio.setup_cli:main"
+alder-setup = "alder.setup_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-molecule_studio = ["assets/*", "mlip/*.json"]
+alder = ["assets/*", "mlip/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

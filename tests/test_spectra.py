@@ -5,8 +5,8 @@ import numpy as np
 import pytest
 from cclib.parser.utils import convertor
 
-from molecule_studio.data import read_calculation
-from molecule_studio.spectra import ElectronicTransitions, read_transitions, broaden, wavelength
+from alder.data import read_calculation
+from alder.spectra import ElectronicTransitions, read_transitions, broaden, wavelength
 
 DATA = Path(__file__).parent / 'data'
 

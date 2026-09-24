@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 from PySide6.QtWidgets import QApplication, QDialog, QWizard
-from molecule_studio import setup_ui as ui
+from alder import setup_ui as ui
 
 
 @pytest.mark.parametrize('cuda,cancel', [(False, False), (True, False), (True, True)])
@@ -24,7 +24,7 @@ def test_walkthrough_detects_host_keeps_worker_alive_and_saves_device(tmp_path, 
         assert release.wait(10)
         if kwargs['cancelled']():
             return False
-        from molecule_studio.mlip.environment import atomic_json
+        from alder.mlip.environment import atomic_json
         atomic_json(root / 'environments.json', {'aimnet2': {'preferred_device': device}})
         kwargs['emit']('Calculation check passed')
         return True

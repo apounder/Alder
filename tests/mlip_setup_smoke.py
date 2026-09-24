@@ -7,7 +7,7 @@ import time
 from types import SimpleNamespace
 
 import pytest
-from molecule_studio.mlip import environment
+from alder.mlip import environment
 
 
 @pytest.fixture
@@ -15,7 +15,7 @@ def setup_dialog(monkeypatch,tmp_path):
     os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
     pytest.importorskip('PySide6')
     from PySide6.QtWidgets import QApplication,QWidget
-    from molecule_studio import mlip_ui as ui
+    from alder import mlip_ui as ui
     app=QApplication.instance() or QApplication([])
     window=QWidget();window.mlip_manager=ui.JobManager(window,tmp_path/'data with spaces')
     dialog=ui.MLIPDialog(window);dialog.backend.setCurrentText('aimnet2')

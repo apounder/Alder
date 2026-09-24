@@ -17,4 +17,4 @@ if [[ "${1:-}" == "--software" ]]; then
         export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json
     fi
 fi
-exec "$studio_dir/.venv/bin/python" "$studio_dir/run_studio.py" "$@"
+exec "$studio_dir/.venv/bin/python" "$studio_dir/run_alder.py" "$@"

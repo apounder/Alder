@@ -4,8 +4,8 @@ import re
 import numpy as np
 import pytest
 
-from molecule_studio.data import read_calculation
-from molecule_studio.paths import attach_irc_trajectory, coordinate
+from alder.data import read_calculation
+from alder.paths import attach_irc_trajectory, coordinate
 
 DATA = Path(__file__).parent / 'data'
 

@@ -6,7 +6,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import '../../src/molecule_studio/assets/appearance.js';
+import '../../src/alder/assets/appearance.js';
 
 // Keep the editing overlays/instancing, but use Studio's shared figure proportions.
 export class StudioView extends MolecularView {

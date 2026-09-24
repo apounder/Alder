@@ -1,11 +1,11 @@
-MOLECULE STUDIO FOR macOS
+ALDER FOR macOS
 
 Choose AppleSilicon for an M-series Mac, or Intel for an Intel Mac.
 This initial build targets macOS 15 (Sequoia) and newer.
 
-Open the DMG and drag Molecule Studio into the Applications shortcut.
-Eject the disk image, then open Molecule Studio from Applications.
-Alternatively, double-click the ZIP and drag Molecule Studio.app into
+Open the DMG and drag Alder into the Applications shortcut.
+Eject the disk image, then open Alder from Applications.
+Alternatively, double-click the ZIP and drag Alder.app into
 Applications. Keep the app bundle intact.
 
 Python, npm, Node.js, a browser, and a localhost server are not required.
@@ -19,10 +19,10 @@ Security > Open Anyway and confirm. Managed Macs may not allow this exception.
 Do not disable Gatekeeper or remove quarantine system-wide.
 https://support.apple.com/en-us/102445
 
-To uninstall, quit Studio and move Molecule Studio.app to Trash.
+To uninstall, quit Studio and move Alder.app to Trash.
 Your calculation files are not part of the app and are left in place.
 
-Startup diagnostics: ~/Library/Logs/Molecule Studio/studio.log
+Startup diagnostics: ~/Library/Logs/Alder/studio.log
 Build information and dependency notices: right-click the app, choose
 Show Package Contents, then Contents/Resources/ReleaseNotes.
-Editor notices are in Contents/Resources/molecule_studio/assets/*-LICENSE*.txt.
+Editor notices are in Contents/Resources/alder/assets/*-LICENSE*.txt.

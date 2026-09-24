@@ -327,7 +327,7 @@ test('Prepared fragments: exact junctions, ester direction, chain extension, spi
   const {planFragment}=await import('../src/editor/fragments.js');
   const {StudioEditor}=await import('../src/editor/studio-editor.js');
   const {point,neighbors}=await import('../src/editor/placement.js');
-  const library=JSON.parse(fs.readFileSync(new URL('../../src/molecule_studio/assets/fragments.json',import.meta.url),'utf8'));
+  const library=JSON.parse(fs.readFileSync(new URL('../../src/alder/assets/fragments.json',import.meta.url),'utf8'));
   const fragment=name=>library.find(f=>f.name===name),empty={name:'draft',atoms:[],bonds:[]};
   for(const f of library) {
     const p=planFragment(empty,f,{root:f.root});assert.equal(formula(p.model),formula(f.model),f.name);
@@ -371,7 +371,7 @@ test('Fragment substitution consumes joining hydrogens even when automatic H adj
   const {StudioEditor}=await import('../src/editor/studio-editor.js');
   const {neighbors}=await import('../src/editor/placement.js');
   const {maxValence}=await import('../src/chemistry.js');
-  const library=JSON.parse(fs.readFileSync(new URL('../../src/molecule_studio/assets/fragments.json',import.meta.url),'utf8'));
+  const library=JSON.parse(fs.readFileSync(new URL('../../src/alder/assets/fragments.json',import.meta.url),'utf8'));
   const methyl=library.find(f=>f.name==='Methyl'),methane=structuredClone(methyl.model),original=structuredClone(methane);
   const hydrogen=methane.atoms.findIndex(a=>a.el==='H');
   for(const f of library)for(const [root,atom] of f.model.atoms.entries()) {

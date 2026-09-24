@@ -6,7 +6,7 @@ let rdkitP = null;
 export const getRDKit = () =>
   (rdkitP ??= new Promise((res, rej) => {
     const s = document.createElement("script");
-    const packed = document.getElementById("molstudio-rdkit");
+    const packed = document.getElementById("alder-rdkit");
     const embedded = packed ? JSON.parse(packed.textContent) : null;
     const runtime = new URL("vendor/rdkit/", document.baseURI);
     s.src = embedded
@@ -21,7 +21,7 @@ export const getRDKit = () =>
       () =>
         fail(
           new Error(
-            "The local chemistry engine timed out. Reload MolStudio and try again.",
+            "The local chemistry engine timed out. Reload Alder and try again.",
           ),
         ),
       45000,
@@ -86,15 +86,15 @@ export function embed3D(mol) {
       const block = mol.get_molblock(),
         m = parseMOL(block);
       if (m.atoms.some((a) => Math.abs(a.z) > 1e-5)) {
-        console.info(`[MolStudio] RDKit 3D path: ${method}`);
+        console.info(`[Alder] RDKit 3D path: ${method}`);
         return m;
       }
     } catch (e) {
-      console.info("[MolStudio] Native embedding unavailable:", String(e));
+      console.info("[Alder] Native embedding unavailable:", String(e));
     }
   }
   console.info(
-    "[MolStudio] RDKit has no usable 3D embedding method; using local topology embedding + 400-step relaxation.",
+    "[Alder] RDKit has no usable 3D embedding method; using local topology embedding + 400-step relaxation.",
   );
   return null;
 }

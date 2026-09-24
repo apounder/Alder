@@ -1,7 +1,7 @@
 import pytest
 from rdkit import Chem
 from rdkit.Chem import rdDepictor
-from molecule_studio.structure import layout_2d, embed_3d, molecule_from_model
+from alder.structure import layout_2d, embed_3d, molecule_from_model
 
 
 def test_coordination_does_not_become_a_covalent_bond_and_ts_is_not_a_chemical_structure():

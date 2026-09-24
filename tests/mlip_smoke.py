@@ -2,7 +2,7 @@
 import json,os,sys,tempfile
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
-from molecule_studio.mlip_smoke import run
+from alder.mlip_smoke import run
 with tempfile.TemporaryDirectory() as folder:
     report=Path(folder)/'report.json'
     code=run(report,os.environ.get('MLIP_TEST_PYTHON'),os.environ.get('MLIP_TEST_CACHE'))

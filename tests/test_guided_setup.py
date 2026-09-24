@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import sys
 
 import pytest
-from molecule_studio.mlip import environment, setup
+from alder.mlip import environment, setup
 
 
 def test_hardware_choices_are_per_machine_and_failed_queries_are_not_no_gpu(monkeypatch):
@@ -169,7 +169,7 @@ def test_cancellation_preserves_existing_configuration(fake_setup):
 
 
 def test_cli_without_stdin_requires_explicit_choices(monkeypatch):
-    from molecule_studio import setup_cli
+    from alder import setup_cli
     monkeypatch.setattr(setup_cli.sys, 'stdin', SimpleNamespace(isatty=lambda: False))
     with pytest.raises(SystemExit) as error:
         setup_cli.main([])

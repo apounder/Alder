@@ -28,7 +28,7 @@ export async function renderExport(view,cmd,bridge,{frame,decorate=()=>{},restor
     if(width*height>3840*2160)throw Error('Video export supports up to 3840 × 2160 pixels.');
     const quality=new Quality('high');let codec;
     for(const c of ['vp9','vp8'])if(await canEncodeVideo(c,{width,height,frameRate:fps,quality})){codec=c;break;}
-    if(!codec)throw Error('This graphics runtime cannot encode WebM video. Update Molecule Studio or your graphics driver.');
+    if(!codec)throw Error('This graphics runtime cannot encode WebM video. Update Alder or your graphics driver.');
     const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
     const ctx=canvas.getContext('2d');
     const target=new StreamTarget(new WritableStream({async write({data,position}) {

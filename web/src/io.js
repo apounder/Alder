@@ -25,7 +25,7 @@ export function writeMOL(model) {
     )
   )
     throw Error("Coordinates exceed the V2000 field width.");
-  let s = `${model.name.replace(/[\r\n]/g, " ")}\n  MolStudio         3D\n\n${pad(model.atoms.length, 3)}${pad(model.bonds.length, 3)}  0  0  0  0            999 V2000\n`;
+  let s = `${model.name.replace(/[\r\n]/g, " ")}\n  Alder         3D\n\n${pad(model.atoms.length, 3)}${pad(model.bonds.length, 3)}  0  0  0  0            999 V2000\n`;
   s +=
     model.atoms
       .map(

@@ -6,9 +6,9 @@ import shutil
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
-from molecule_studio.mlip.environment import hardware, choose_device
-from molecule_studio.mlip.setup import run_setup, select_models, setup_lock
-from molecule_studio.mlip.registry import model_path
+from alder.mlip.environment import hardware, choose_device
+from alder.mlip.setup import run_setup, select_models, setup_lock
+from alder.mlip.registry import model_path
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--root', required=True, type=Path)

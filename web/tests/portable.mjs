@@ -4,9 +4,9 @@ import { resolve } from "node:path";
 import { mkdtemp, copyFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import assert from "node:assert/strict";
-const folder = await mkdtemp(resolve(tmpdir(), "MolStudio offline space "));
-const target = resolve(folder, "MolStudio.html");
-await copyFile("portable/MolStudio.html", target);
+const folder = await mkdtemp(resolve(tmpdir(), "Alder offline space "));
+const target = resolve(folder, "Alder.html");
+await copyFile("portable/Alder.html", target);
 const browser = await chromium.launch({
   headless: true,
   args: [
@@ -31,7 +31,7 @@ page.on("request", (r) => {
 });
 try {
   await page.goto(pathToFileURL(target).href);
-  await page.waitForFunction(() => window.molstudio?.model.atoms.length === 21);
+  await page.waitForFunction(() => window.alder?.model.atoms.length === 21);
   assert.equal(await page.evaluate(() => !!window.initRDKitModule), false);
   assert.equal(
     await page.evaluate(
@@ -44,25 +44,25 @@ try {
   );
   await page.click("[data-sample=Benzene]");
   await page.waitForFunction(
-    () => molstudio.model.name === "Benzene",
+    () => alder.model.name === "Benzene",
     {},
     { timeout: 60000 },
   );
-  assert.equal(await page.evaluate(() => molstudio.model.atoms.length), 12);
+  assert.equal(await page.evaluate(() => alder.model.atoms.length), 12);
   assert.ok(
     await page.evaluate(
       () =>
         Math.abs(
           Math.hypot(
-            molstudio.model.atoms[0].x - molstudio.model.atoms[1].x,
-            molstudio.model.atoms[0].y - molstudio.model.atoms[1].y,
+            alder.model.atoms[0].x - alder.model.atoms[1].x,
+            alder.model.atoms[0].y - alder.model.atoms[1].y,
           ) - 1.39,
         ) < 0.01,
     ),
   );
   await page.fill("#smiles", "O");
   await page.click("#render");
-  await page.waitForFunction(() => molstudio.model.atoms.length === 3);
+  await page.waitForFunction(() => alder.model.atoms.length === 3);
   console.log("PASS offline SMILES -> 3D from embedded RDKit JS/WASM");
   const downloadEvent = page.waitForEvent("download");
   await page.click("#mol");
@@ -71,13 +71,13 @@ try {
   await download.saveAs(molPath);
   assert.match(await readFile(molPath, "utf8"), /V2000/);
   await page.click("#new");
-  assert.equal(await page.evaluate(() => molstudio.model.atoms.length), 0);
+  assert.equal(await page.evaluate(() => alder.model.atoms.length), 0);
   await page.mouse.click(670, 430);
-  assert.equal(await page.evaluate(() => molstudio.model.atoms.length), 1);
+  assert.equal(await page.evaluate(() => alder.model.atoms.length), 1);
   await page.click("#undo");
-  assert.equal(await page.evaluate(() => molstudio.model.atoms.length), 0);
+  assert.equal(await page.evaluate(() => alder.model.atoms.length), 0);
   await page.setInputFiles("#file", molPath);
-  await page.waitForFunction(() => molstudio.model.atoms.length === 3);
+  await page.waitForFunction(() => alder.model.atoms.length === 3);
   console.log(
     "PASS local download/import, atom addition and undo without a server",
   );
@@ -106,9 +106,9 @@ try {
   const fresh = await context.newPage();
   fresh.on("pageerror", (e) => errors.push(e.message));
   await fresh.goto(link);
-  await fresh.waitForFunction(() => molstudio.model.atoms.length === 3);
+  await fresh.waitForFunction(() => alder.model.atoms.length === 3);
   assert.equal(
-    await fresh.evaluate(() => molstudio.view.style.background),
+    await fresh.evaluate(() => alder.view.style.background),
     "transparent",
   );
   await fresh.close();

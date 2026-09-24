@@ -1,7 +1,7 @@
 # Guided installation and model setup plan
 
 Status: core workflow implemented on 22 September 2026. `install.py`,
-`environment.yml`, `molecule-studio-setup`, the shared setup engine, and the native
+`environment.yml`, `alder-setup`, the shared setup engine, and the native
 wizard now exist. Follow the [README](../README.md#installation) for current commands.
 
 Implemented: per-machine CPU/NVIDIA detection, explicit CPU versus driver-selected
@@ -61,8 +61,8 @@ support applies to compatible NVIDIA GPUs, not every graphics card.
 Proposed user commands, with Git and a supported Python already available:
 
 ```text
-git clone https://github.com/apounder/molecule-studio.git
-cd molecule-studio
+git clone https://github.com/apounder/alder.git
+cd alder
 python install.py
 ```
 
@@ -80,8 +80,8 @@ Proposed commands from the downloaded or cloned repository:
 
 ```text
 conda env create -f environment.yml
-conda activate molecule-studio
-molecule-studio-setup
+conda activate alder
+alder-setup
 ```
 
 The environment file installs a tested Python version, pip, and the desktop
@@ -91,13 +91,13 @@ do not affect Conda's base
 environment or the GUI. The final command runs the same walkthrough as Git setup.
 
 This is installation using a repository environment file. A literal
-`conda install molecule-studio` additionally needs a published Conda package and
+`conda install alder` additionally needs a published Conda package and
 channel; do not document that command until the distribution exists.
 
 ### Existing pip installations and desktop downloads
 
-Add `molecule-studio-setup` as a console entry point while retaining
-`molecule-studio` as the GUI entry point. Include a module invocation fallback for
+Add `alder-setup` as a console entry point while retaining
+`alder` as the GUI entry point. Include a module invocation fallback for
 PATH problems. Windows GUI executables cannot be relied on to provide stdin for
 terminal questions.
 
@@ -214,10 +214,10 @@ package installation. Retain completed stages even if one model fails.
 Proposed command examples after installation:
 
 ```text
-molecule-studio-setup
-molecule-studio-setup --models all --device auto
-molecule-studio-setup --repair --device cuda
-molecule-studio-setup --check
+alder-setup
+alder-setup --models all --device auto
+alder-setup --repair --device cuda
+alder-setup --check
 ```
 
 `--models all` selects all catalogue entries but does not waive access requirements

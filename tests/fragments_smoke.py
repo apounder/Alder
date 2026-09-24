@@ -8,8 +8,8 @@ from PySide6.QtGui import QMouseEvent
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QMessageBox
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
-from molecule_studio.app import Window, configure_app
-from molecule_studio.structure import molecule_from_model
+from alder.app import Window, configure_app
+from alder.structure import molecule_from_model
 app=QApplication([]);configure_app(app)
 w=Window();w.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen,True);w.show();QApplication.setActiveWindow(w)
 errors=[];w.builder_bridge.error.connect(errors.append);w.bridge.error.connect(errors.append)

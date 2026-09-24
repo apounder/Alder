@@ -10,8 +10,8 @@ import sys
 import tempfile
 import traceback
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
-from molecule_studio.mlip.environment import managed_environment
-from molecule_studio.mlip.offline import manifest
+from alder.mlip.environment import managed_environment
+from alder.mlip.offline import manifest
 
 
 @contextmanager
@@ -28,9 +28,9 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--bundle',type=Path,required=True);parser.add_argument('--report',type=Path,required=True)
     args=parser.parse_args();bundle=args.bundle.resolve();report={'ok':False,'checks':[],'models':{}}
-    os.environ.update(MOLECULE_STUDIO_OFFLINE_BUNDLE=str(bundle),HF_HUB_OFFLINE='1',UV_OFFLINE='1',
+    os.environ.update(ALDER_OFFLINE_BUNDLE=str(bundle),HF_HUB_OFFLINE='1',UV_OFFLINE='1',
                       HTTP_PROXY='http://127.0.0.1:9',HTTPS_PROXY='http://127.0.0.1:9')
-    worker=Path(__file__).resolve().parents[1]/'src/molecule_studio/mlip/worker.py'
+    worker=Path(__file__).resolve().parents[1]/'src/alder/mlip/worker.py'
     try:
         with temporary_workspace() as folder:
             root=Path(folder);block=root/'deny-network';block.mkdir()

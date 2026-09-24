@@ -13,8 +13,8 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'src'))
-from molecule_studio.app import Window, configure_app
-from molecule_studio.data import Calculation
+from alder.app import Window, configure_app
+from alder.data import Calculation
 
 app = QApplication([])
 configure_app(app)
@@ -160,7 +160,7 @@ try:
         QTimer.singleShot(150, lambda: w.send(type='exportCancel'))
         wait(lambda: not w.exporting)
         assert path.read_bytes() == b'previous file'
-        assert not list(directory.glob('.molecule-studio-*'))
+        assert not list(directory.glob('.alder-*'))
         assert snapshot() == before
         pump(.3)
         count = js('calculationApp.view.frameCount')

@@ -12,7 +12,7 @@ await build({
     emptyOutDir: true,
     lib: {
       entry: "src/main.js",
-      name: "MolStudio",
+      name: "Alder",
       formats: ["iife"],
       fileName: () => "app.js",
     },
@@ -51,10 +51,10 @@ html = html.replace("</head>", () => `<style>${css}</style></head>`);
 html = html.replace(
   "</body>",
   () =>
-    `<script type="application/json" id="molstudio-rdkit">${packed}</script><script>${script}</script></body>`,
+    `<script type="application/json" id="alder-rdkit">${packed}</script><script>${script}</script></body>`,
 );
 await mkdir("portable", { recursive: true });
-let licenses = "MolStudio portable: third-party notices\n\n";
+let licenses = "Alder portable: third-party notices\n\n";
 for (const [name, path] of [
   ["Three.js", "node_modules/three/LICENSE"],
   ["LZ-String", "node_modules/lz-string/LICENSE"],
@@ -67,8 +67,8 @@ html = html.replace(
   () =>
     `<script type="text/plain" id="third-party-notices">${licenses.replace(/<\/script/gi, "<\\/script")}</script></body>`,
 );
-await writeFile("portable/MolStudio.html", html);
+await writeFile("portable/Alder.html", html);
 await rm(out, { recursive: true });
 console.log(
-  `Portable app: portable/MolStudio.html (${(Buffer.byteLength(html) / 1024 / 1024).toFixed(1)} MiB). No server or installation required.`,
+  `Portable app: portable/Alder.html (${(Buffer.byteLength(html) / 1024 / 1024).toFixed(1)} MiB). No server or installation required.`,
 );

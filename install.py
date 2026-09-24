@@ -9,7 +9,7 @@ import sys
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__, epilog='Other options are passed to molecule-studio-setup; for example --models all --device auto.')
+    parser = argparse.ArgumentParser(description=__doc__, epilog='Other options are passed to alder-setup; for example --models all --device auto.')
     parser.add_argument('--environment', type=Path, default=Path('.venv'), help='app environment directory (default: .venv)')
     args, setup_args = parser.parse_known_args()
     root = Path(__file__).resolve().parent
@@ -18,7 +18,7 @@ def main():
     if not shutil.which('git'):
         raise SystemExit('Git is needed to install the pinned cclib parser. Install Git from https://git-scm.com/downloads, reopen your terminal, and retry; or use the Conda instructions, which install Git automatically.')
     sys.path.insert(0, str(root / 'src'))
-    from molecule_studio.mlip.environment import ensure_uv, redact
+    from alder.mlip.environment import ensure_uv, redact
     environment = args.environment.resolve()
     python = environment / ('Scripts/python.exe' if sys.platform == 'win32' else 'bin/python')
     other_python = environment / ('bin/python' if sys.platform == 'win32' else 'Scripts/python.exe')
@@ -30,12 +30,12 @@ def main():
                                    'UV_PYTHON_INSTALL_DIR': str(root / '.build-tools/python')}
         if not python.is_file():
             subprocess.run([str(uv), 'venv', '--managed-python', '--python', '3.14', str(environment)], env=process_env, check=True)
-        print('Installing Molecule Studio and its desktop dependencies…', flush=True)
+        print('Installing Alder and its desktop dependencies…', flush=True)
         subprocess.run([str(uv), 'pip', 'install', '--python', str(python),
-                        '--reinstall-package', 'molecule-studio', str(root)], env=process_env, check=True)
+                        '--reinstall-package', 'alder-molecular', str(root)], env=process_env, check=True)
         command = "& '" + str(python).replace("'", "''") + "'" if sys.platform == 'win32' else shlex.quote(str(python))
-        print(f'\nLater, launch the app with:\n  {command} -m molecule_studio\n', flush=True)
-        return subprocess.call([str(python), '-m', 'molecule_studio', 'setup', *setup_args])
+        print(f'\nLater, launch the app with:\n  {command} -m alder\n', flush=True)
+        return subprocess.call([str(python), '-m', 'alder', 'setup', *setup_args])
     except KeyboardInterrupt:
         print('\nInstallation stopped. Rerun python install.py to continue.')
         return 130

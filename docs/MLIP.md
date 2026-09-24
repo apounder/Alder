@@ -1,6 +1,6 @@
 # Local MLIP calculations
 
-Molecule Studio runs molecular calculations in separate Python processes. The desktop viewer/editor remains usable while a job runs. The GUI edition downloads calculation environments on request. The Windows MLIP Offline edition includes CPU environments and public models. Ordinary calculations do not require a terminal; prepared models run offline.
+Alder runs molecular calculations in separate Python processes. The desktop viewer/editor remains usable while a job runs. The GUI edition downloads calculation environments on request. The Windows MLIP Offline edition includes CPU environments and public models. Ordinary calculations do not require a terminal; prepared models run offline.
 
 ## First use
 
@@ -12,7 +12,7 @@ Molecule Studio runs molecular calculations in separate Python processes. The de
 
 The default public MACE checkpoint is **MACE-ANI-CC**. UMA uses the gated `facebook/UMA` repository. Both walkthroughs use the official Hugging Face client and its local credential cache, never putting tokens in job input, command-line arguments, or setup reports. Terminal token entry is hidden; the GUI field is masked. Existing credentials work. Authentication does not grant model access automatically. Missing access leaves that model pending while eligible public models can finish.
 
-**Guided setup** can install multiple checkpoints, add models, and repair CPU/GPU support. Valid environments and verified weights are reused. A replacement is registered only after a real model check succeeds; existing jobs and the previous environment are retained. Terminal users can run `molecule-studio-setup --repair --device cuda` or `--device cpu` with the GUI closed. `--check` verifies existing installations without downloading.
+**Guided setup** can install multiple checkpoints, add models, and repair CPU/GPU support. Valid environments and verified weights are reused. A replacement is registered only after a real model check succeeds; existing jobs and the previous environment are retained. Terminal users can run `alder-setup --repair --device cuda` or `--device cpu` with the GUI closed. `--check` verifies existing installations without downloading.
 
 **Queue local calculation** rechecks the selected model when readiness has not been verified in this session, including after reopening or changing device/precision. It checks the captured structure and queues its snapshot only after success; failure or cancellation queues nothing. This uses existing weights and the registered environment without reinstalling. **Advanced setup** retains manual environment connection and the earlier individual checkpoint controls, including compatible local model files.
 
@@ -90,7 +90,7 @@ All torsions now use ASE's signed convention, wrapped to **[-180°, 180°)**. Fo
 
 ## Storage, units and recovery
 
-The application-data `calculations-v1` directory contains `jobs.sqlite`, `models/`, `environments.json`, `env-v1-<backend>/`, and managed `python/`, `tools/` and `package-cache/` directories. Qt selects the current user’s application-data location on Windows, macOS and Linux; nothing needs to be placed beside the executable or edited by hand. **Open setup folder** or **Open job folder** opens it. Hugging Face credentials use the official client’s automatically selected credential location; model files are cached under the app’s `models/` directory. `MOLECULE_STUDIO_MLIP_HOME` can select an alternative root for testing or managed deployments.
+The application-data `calculations-v1` directory contains `jobs.sqlite`, `models/`, `environments.json`, `env-v1-<backend>/`, and managed `python/`, `tools/` and `package-cache/` directories. Qt selects the current user’s application-data location on Windows, macOS and Linux; nothing needs to be placed beside the executable or edited by hand. **Open setup folder** or **Open job folder** opens it. Hugging Face credentials use the official client’s automatically selected credential location; model files are cached under the app’s `models/` directory. `ALDER_MLIP_HOME` can select an alternative root for testing or managed deployments.
 
 `setup-state.json` records selected checkpoints, licence acknowledgements and
 completed/pending steps, never tokens. CUDA environments have a `-cuda` suffix;

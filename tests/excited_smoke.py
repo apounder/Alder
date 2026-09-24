@@ -14,7 +14,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
-from molecule_studio.app import Window, configure_app
+from alder.app import Window, configure_app
 
 app = QApplication([])
 configure_app(app)
@@ -97,7 +97,7 @@ try:
     panel.sticks.setChecked(True)
     panel.shape.setCurrentText('Gaussian')
     panel.width.setValue(.3)
-    w.grab().save(str(Path(tempfile.gettempdir()) / 'molecule-studio-uv.png'))
+    w.grab().save(str(Path(tempfile.gettempdir()) / 'alder-uv.png'))
     for strengths, expected in [(np.full(2, np.nan), 'missing'), (np.zeros(2), 'zero')]:
         panel.set_calculation(replace(w.calculation, transitions=replace(t, strengths=strengths)))
         assert expected in panel.note.text()

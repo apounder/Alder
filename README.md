@@ -1,4 +1,6 @@
-# Molecule Studio
+# Alder
+
+![Alder logo and reaction profile](docs/assets/alder-header.png)
 
 An offline desktop application for viewing computational chemistry results,
 building molecules, running local MLIP calculations, and exporting figures. Calculation files and structures
@@ -57,16 +59,16 @@ arbitrary Hugging Face models are not automatically compatible.
 
 ### 1. Desktop download
 
-Open [GitHub Releases](https://github.com/apounder/molecule-studio/releases) and
+Open [GitHub Releases](https://github.com/apounder/alder/releases) and
 choose the download for your computer. **If no matching release is available,
 use the Conda or source instructions below.** A source ZIP is not a desktop installer.
 
 On Windows 10 (1809+) or Windows 11, download the x64 **Setup.exe**, open it,
-and follow the installation and model setup windows. Then open **Molecule Studio**
+and follow the installation and model setup windows. Then open **Alder**
 from the Start menu. Python, Conda, Git, and Node.js are not required.
 
 Alternatively, download a **Portable.zip**, right-click it, choose **Extract All**,
-and open `MoleculeStudio.exe` inside the extracted folder. Keep `_internal` beside
+and open `Alder.exe` inside the extracted folder. Keep `_internal` beside
 the executable and, if included, the complete `mlip-offline` folder. Do not run
 the executable from inside the ZIP.
 
@@ -81,7 +83,7 @@ screen. A fresh portable launch also offers the walkthrough. Existing users can
 open **Local MLIP → Environment / models → Guided setup** at any time.
 
 macOS downloads are experimental: choose the matching Apple Silicon or Intel DMG,
-drag **Molecule Studio** into **Applications**, and open it. Use CPU for calculations;
+drag **Alder** into **Applications**, and open it. Use CPU for calculations;
 CUDA requires NVIDIA hardware on Windows or Linux. See the
 [macOS guide](packaging/MACOS.md) for current validation and first-launch details.
 Linux users should use Conda or source installation and have a graphical session
@@ -93,14 +95,14 @@ Windows builds are unsigned; macOS builds are not Apple-notarized.
 
 Download this repository using **Code → Download ZIP** and extract it, or clone it
 with Git. Open Anaconda Prompt or a terminal where `conda` works, then change to
-the extracted `molecule-studio` or `molecule-studio-main` folder.
+the extracted `alder` or `alder-main` folder.
 
 Run these commands one at a time; continue after each succeeds:
 
 ```sh
 conda env create -f environment.yml
-conda activate molecule-studio
-molecule-studio-setup
+conda activate alder
+alder-setup
 ```
 
 The first command installs Python, Git, and the desktop dependencies in their own
@@ -110,21 +112,21 @@ There is no need to find model Python paths or install PyTorch yourself.
 For later launches:
 
 ```sh
-conda activate molecule-studio
-molecule-studio
+conda activate alder
+alder
 ```
 
 If you already created this Conda environment using the previous instructions,
 update the app from the repository folder and start the new walkthrough:
 
 ```sh
-conda activate molecule-studio
+conda activate alder
 python -m pip install --upgrade .
-molecule-studio-setup
+alder-setup
 ```
 
 This route uses the repository's `environment.yml`. A published
-`conda install molecule-studio` package is not currently provided.
+`conda install alder` package is not currently provided.
 
 ### 3. Source ZIP
 
@@ -149,13 +151,13 @@ using Git. Node.js and npm are not needed for this route.
 Launch later from that folder on Windows:
 
 ```powershell
-.\.venv\Scripts\python.exe -m molecule_studio
+.\.venv\Scripts\python.exe -m alder
 ```
 
 Or on macOS/Linux:
 
 ```sh
-./.venv/bin/python -m molecule_studio
+./.venv/bin/python -m alder
 ```
 
 ### 4. Git clone
@@ -163,8 +165,8 @@ Or on macOS/Linux:
 Run these commands in PowerShell, Anaconda Prompt, or your terminal:
 
 ```sh
-git clone https://github.com/apounder/molecule-studio.git
-cd molecule-studio
+git clone https://github.com/apounder/alder.git
+cd alder
 python install.py
 ```
 
@@ -228,7 +230,7 @@ models → Guided setup**, choose **NVIDIA graphics card (CUDA)**, and continue.
 Or, in your activated Conda/app environment, run:
 
 ```sh
-molecule-studio-setup --device cuda
+alder-setup --device cuda
 ```
 
 The walkthrough creates a replacement when needed, reuses cached model weights,
@@ -241,16 +243,16 @@ setup, or use Guided setup inside the GUI.
 In an activated app environment:
 
 ```sh
-molecule-studio-setup
-molecule-studio-setup --models all --device auto
-molecule-studio-setup --repair --device cuda
-molecule-studio-setup --check
+alder-setup
+alder-setup --models all --device auto
+alder-setup --repair --device cuda
+alder-setup --check
 ```
 
 For the source installer on Windows, use
-`.\.venv\Scripts\python.exe -m molecule_studio setup` with the same options;
-on macOS/Linux, use `./.venv/bin/python -m molecule_studio setup`.
-If a command is not on PATH, `python -m molecule_studio setup` also works inside
+`.\.venv\Scripts\python.exe -m alder setup` with the same options;
+on macOS/Linux, use `./.venv/bin/python -m alder setup`.
+If a command is not on PATH, `python -m alder setup` also works inside
 the activated app environment.
 
 Repeat setup after an interruption. Completed environments and verified weights
@@ -262,7 +264,7 @@ Reopening the app does not reinstall models.
 For unattended public-model setup, explicitly provide the choices:
 
 ```sh
-molecule-studio-setup --models recommended --device cpu --non-interactive
+alder-setup --models recommended --device cpu --non-interactive
 ```
 
 Restricted-model automation can use an existing Hugging Face login or `HF_TOKEN`,
@@ -387,7 +389,7 @@ create and activate a virtual environment, then run:
 
 ```sh
 python -m pip install ".[dev]"
-molecule-studio
+alder
 ```
 
 Run the Python tests with `python -m pytest -q`. Run

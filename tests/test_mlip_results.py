@@ -3,10 +3,10 @@ import pytest
 from ase import Atoms, units
 from ase.constraints import FixAtoms
 from ase.io import write
-from molecule_studio.mlip.contract import snapshot
-from molecule_studio.mlip.store import Store
-from molecule_studio.mlip_results import calculation_page
-from molecule_studio.trajectory import read_trajectory
+from alder.mlip.contract import snapshot
+from alder.mlip.store import Store
+from alder.mlip_results import calculation_page
+from alder.trajectory import read_trajectory
 
 
 def test_bounded_result_units_modes_and_path_associations(tmp_path):
@@ -45,7 +45,7 @@ def test_imported_simulation_input_preserved(tmp_path):
 
 def test_queue_recovers_worker_that_exits_after_startup(tmp_path,monkeypatch):
     from PySide6.QtCore import QCoreApplication, QObject
-    from molecule_studio import mlip_ui
+    from alder import mlip_ui
     app=QCoreApplication.instance() or QCoreApplication([])
     owner=QObject();root=tmp_path/'queue'
     manager=mlip_ui.JobManager(owner,root)

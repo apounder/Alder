@@ -8,9 +8,9 @@ from ase.io.extxyz import write_extxyz
 from ase.io.trajectory import Trajectory
 from ase.units import Hartree
 
-from molecule_studio.alignment import atom_pairs, rigid_fit
-from molecule_studio.trajectory import read_trajectory
-from molecule_studio.job_setup import generate_input, scan_coordinates
+from alder.alignment import atom_pairs, rigid_fit
+from alder.trajectory import read_trajectory
+from alder.job_setup import generate_input, scan_coordinates
 
 
 def test_alignment_rotation_mapping_and_chirality():

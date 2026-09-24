@@ -12,7 +12,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
-from molecule_studio.app import Window, configure_app
+from alder.app import Window, configure_app
 
 app = QApplication([])
 configure_app(app)
@@ -76,7 +76,7 @@ try:
         if p.parameters.shape[1] == 2:
             assert panel.colorbar is not None
             app.processEvents()
-            w.grab().save(str(Path(tempfile.gettempdir())/'molecule-studio-scan2d.png'))
+            w.grab().save(str(Path(tempfile.gettempdir())/'alder-scan2d.png'))
         print('PASS path import, selection, playback, units and export: '+name, flush=True)
     w.open_paths([Path(__file__).parent/'data'/'gaussian-eom-opt.log'])
     wait(lambda: not w.busy)

@@ -9,14 +9,14 @@ general release.
 1. In GitHub Desktop, open the repository, commit the changes, and choose
    **Push origin**. If starting a new repository instead, choose
    **Publish repository** after the first commit. Include `.github`, `packaging`, `scripts`,
-   `src`, `web`, `tests`, `pyproject.toml`, and `run_studio.py`. Build folders and
+   `src`, `web`, `tests`, `pyproject.toml`, and `run_alder.py`. Build folders and
    local calculation examples are ignored. No Mac, npm, or terminal is needed
    for these steps.
 2. On the repository's GitHub page, choose **Actions → macOS download → Run
    workflow**. The workflow must be on the default branch. It uses GitHub's
    `macos-15` Apple Silicon and `macos-15-intel` runners separately.
-3. Wait for both jobs to turn green. Download the **MoleculeStudio-macOS-AppleSilicon**
-   and **MoleculeStudio-macOS-Intel** artifacts from the completed run. Each
+3. Wait for both jobs to turn green. Download the **Alder-macOS-AppleSilicon**
+   and **Alder-macOS-Intel** artifacts from the completed run. Each
    artifact ZIP contains a DMG, an app ZIP, and SHA-256 checksums. Actions
    downloads require a GitHub login and expire after 30 days.
 4. To make lasting public downloads, attach the DMGs, app ZIPs, and checksum
@@ -36,10 +36,10 @@ not claimed as supported. These are separate native apps, not a universal app.
 
 | Mac | Download |
 | --- | --- |
-| Apple M-series chip | `MoleculeStudio-<version>-macOS-AppleSilicon.dmg` |
-| Intel processor | `MoleculeStudio-<version>-macOS-Intel.dmg` |
+| Apple M-series chip | `Alder-<version>-macOS-AppleSilicon.dmg` |
+| Intel processor | `Alder-<version>-macOS-Intel.dmg` |
 
-Open the DMG, drag **Molecule Studio** onto **Applications**, eject the DMG,
+Open the DMG, drag **Alder** onto **Applications**, eject the DMG,
 then open the app from Applications. The alternative ZIP contains the same
 `.app`; extract it and move it to Applications. Python, Node.js, npm, a browser,
 and localhost are not needed. The calculation viewer, both builders, fragments,
@@ -92,7 +92,7 @@ conformer coordinates can differ between versions. The bundled JS engine and
 prepared fragment library are identical on both architectures.
 
 If a job fails, download its **macOS-…-diagnostics** artifact and inspect the
-workflow log. Startup output is in `~/Library/Logs/Molecule Studio/studio.log`;
+workflow log. Startup output is in `~/Library/Logs/Alder/studio.log`;
 the smoke report records the first exception and the checks that completed.
 
 ## Local builds on a Mac (maintainers only)

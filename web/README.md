@@ -2,7 +2,7 @@
 
 Editable Three.js renderer, 3D builder, and Ketcher 2D adapter used by the
 desktop app. The desktop's generated assets are committed in
-`../src/molecule_studio/assets`, so installing or building the Windows release
+`../src/alder/assets`, so installing or building the Windows release
 does **not** require npm. See the [desktop README](../README.md) for app usage.
 
 To change these assets, install Node.js 20.19+ or 22.12+, then run from `web`:
@@ -21,7 +21,7 @@ The shared appearance presets live in the desktop assets directory.
 
 `npm run dev` also starts the standalone browser editor for development.
 `npm run build` produces its static site. `npm run package:portable` produces
-a self-contained browser HTML in `portable/MolStudio.html`; it is separate from
+a self-contained browser HTML in `portable/Alder.html`; it is separate from
 the Windows desktop installer. Browser integration tests use Playwright; run
 `npx playwright install chromium` and `npm run test:browser` while Vite is
 running. These scripts are for developers, not desktop users.

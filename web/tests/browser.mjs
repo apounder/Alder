@@ -22,14 +22,14 @@ page.on("console", (m) => {
   if (m.type() === "error") errors.push(m.text());
 });
 const base = process.env.APP_URL || "http://127.0.0.1:5173";
-const state = () => page.evaluate(() => structuredClone(molstudio.model));
+const state = () => page.evaluate(() => structuredClone(alder.model));
 const clickAtom = async (i) => {
   const pos = await page.evaluate(async (i) => {
     const { Vector3 } = await import(
       "/node_modules/three/build/three.module.js"
     );
-    const v = molstudio.view,
-      a = molstudio.model.atoms[i],
+    const v = alder.view,
+      a = alder.model.atoms[i],
       r = v.renderer.domElement.getBoundingClientRect();
     for (const dir of [
       [0.1, 0.16, 1],
@@ -64,13 +64,13 @@ const clickAtom = async (i) => {
 };
 try {
   await page.goto(base);
-  await page.waitForFunction(() => window.molstudio?.model.atoms.length === 21);
+  await page.waitForFunction(() => window.alder?.model.atoms.length === 21);
   assert.equal(await page.evaluate(() => !!window.initRDKitModule), false);
   assert.equal(
     await page.evaluate(
       () =>
-        molstudio.view.atomMesh.isInstancedMesh &&
-        molstudio.view.bondMesh.isInstancedMesh,
+        alder.view.atomMesh.isInstancedMesh &&
+        alder.view.bondMesh.isInstancedMesh,
     ),
     true,
   );
@@ -83,12 +83,12 @@ try {
   ]) {
     await page.fill("#smiles", smiles);
     await page.click("#render");
-    await page.waitForFunction((s) => molstudio.model.smiles === s, smiles, {
+    await page.waitForFunction((s) => alder.model.smiles === s, smiles, {
       timeout: 60000,
     });
     const result = await page.evaluate(async (name) => {
       const { measure } = await import("/src/measure.js");
-      const m = molstudio.model;
+      const m = alder.model;
       if (name === "Benzene")
         return {
           z: Math.max(...m.atoms.map((a) => Math.abs(a.z))),
@@ -205,7 +205,7 @@ try {
       .every((l) => /\s-?\d+\.\d{4}\s+-?\d+\.\d{4}\s+-?\d+\.\d{4}$/.test(l)),
   );
   await page.setInputFiles("#file", xyzPath);
-  await page.waitForFunction(() => molstudio.model.name === "ethanol");
+  await page.waitForFunction(() => alder.model.name === "ethanol");
   const imported = await state();
   assert.deepEqual(
     imported.atoms.map((a) => a.el),
@@ -223,24 +223,24 @@ try {
   await clickAtom(1);
   await page.click("[data-tool=move]");
   const dragState = await state(),
-    undoCount = await page.evaluate(() => molstudio.editor.undoStack.length);
+    undoCount = await page.evaluate(() => alder.editor.undoStack.length);
   const pos = await clickAtom(0);
   await page.mouse.move(pos.x, pos.y);
   await page.mouse.down();
   await page.mouse.move(pos.x + 45, pos.y - 20, { steps: 6 });
   assert.equal(
-    await page.evaluate(() => molstudio.view.controls.enabled),
+    await page.evaluate(() => alder.view.controls.enabled),
     false,
   );
   const movedLabel = await page.locator("#measurement").innerText();
   assert.match(movedLabel, /Distance/);
   await page.mouse.up();
   assert.equal(
-    await page.evaluate(() => molstudio.view.controls.enabled),
+    await page.evaluate(() => alder.view.controls.enabled),
     true,
   );
   assert.equal(
-    await page.evaluate(() => molstudio.editor.undoStack.length),
+    await page.evaluate(() => alder.editor.undoStack.length),
     undoCount + 1,
   );
   const moved = await state();
@@ -274,7 +274,7 @@ try {
   assert.deepEqual(await state(), beforeDelete);
   console.log("PASS bond cycling and deletion");
   await page.click("#tidy");
-  await page.waitForFunction(() => !molstudio.editor.locked);
+  await page.waitForFunction(() => !alder.editor.locked);
   assert.ok(
     (await state()).atoms.every((a) => [a.x, a.y, a.z].every(Number.isFinite)),
   );
@@ -290,14 +290,14 @@ try {
   assert.equal(
     await page.evaluate(
       () =>
-        molstudio.view.bondMesh.count > 0 &&
-        molstudio.view.labels.children.length === 3,
+        alder.view.bondMesh.count > 0 &&
+        alder.view.labels.children.length === 3,
     ),
     true,
   );
   assert.equal(
     await page.evaluate(() => {
-      const v = molstudio.view,
+      const v = alder.view,
         a = v.model.atoms.findIndex((a) => a.el === "H");
       const p = v.model.atoms[a];
       return v.visible(a);
@@ -315,21 +315,21 @@ try {
   const fresh = await context.newPage();
   fresh.on("pageerror", (e) => errors.push(e.message));
   await fresh.goto(url);
-  await fresh.waitForFunction(() => window.molstudio?.model.atoms.length === 9);
+  await fresh.waitForFunction(() => window.alder?.model.atoms.length === 9);
   assert.deepEqual(
-    await fresh.evaluate(() => molstudio.model.atoms),
+    await fresh.evaluate(() => alder.model.atoms),
     (await state()).atoms,
   );
   assert.deepEqual(
-    await fresh.evaluate(() => molstudio.model.bonds),
+    await fresh.evaluate(() => alder.model.bonds),
     (await state()).bonds,
   );
   assert.deepEqual(
-    await fresh.evaluate(() => molstudio.view.style),
-    await page.evaluate(() => molstudio.view.style),
+    await fresh.evaluate(() => alder.view.style),
+    await page.evaluate(() => alder.view.style),
   );
   assert.equal(
-    await fresh.evaluate(() => molstudio.editor.undoStack.length),
+    await fresh.evaluate(() => alder.editor.undoStack.length),
     0,
   );
   await fresh.close();
@@ -378,19 +378,19 @@ try {
       .dispatchEvent(
         new DragEvent("drop", { bubbles: true, dataTransfer: dt }),
       );
-    while (molstudio.model.name !== "1crn")
+    while (alder.model.name !== "1crn")
       await new Promise(requestAnimationFrame);
-    molstudio.view.renderer.render(molstudio.view.scene, molstudio.view.camera);
+    alder.view.renderer.render(alder.view.scene, alder.view.camera);
     return {
       ms: performance.now() - start,
-      atoms: molstudio.model.atoms.length,
+      atoms: alder.model.atoms.length,
     };
   }, pdb);
   assert.equal(timing.atoms, 327);
   assert.ok(timing.ms < 1000, `PDB import ${timing.ms}ms`);
   console.log("PASS 46-residue PDB drag-drop", timing);
   await page.click("[data-sample=Aspirin]");
-  await page.waitForFunction(() => molstudio.model.name === "Aspirin");
+  await page.waitForFunction(() => alder.model.name === "Aspirin");
   await page.selectOption("#background", "light");
   await page.selectOption("#palette", "cpk");
   await page.mouse.move(1400, 980);

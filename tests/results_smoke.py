@@ -8,8 +8,8 @@ from PySide6.QtCore import Qt,QPoint
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication,QMessageBox
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
-from molecule_studio.app import Window,configure_app
-from molecule_studio.data import BOHR
+from alder.app import Window,configure_app
+from alder.data import BOHR
 app=QApplication([]);configure_app(app)
 w=Window();w.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen,True);w.show();QApplication.setActiveWindow(w)
 errors=[];w.bridge.error.connect(errors.append);w.builder_bridge.error.connect(errors.append)

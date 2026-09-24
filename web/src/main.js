@@ -264,7 +264,7 @@ window.addEventListener("keydown", (e) => {
 });
 setElement("C");
 load(model);
-window.molstudio = {
+window.alder = {
   view,
   editor,
   get model() {

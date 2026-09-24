@@ -63,7 +63,7 @@ jobs:
       - name: Upload Mac downloads
         uses: actions/upload-artifact@v7
         with:
-          name: MoleculeStudio-macOS-${{ matrix.label }}
+          name: Alder-macOS-${{ matrix.label }}
           path: dist/release/*
           compression-level: 0
           if-no-files-found: error
@@ -76,7 +76,7 @@ jobs:
           path: |
             build/*-smoke.json
             build/macos-notices/build-info.txt
-            build/MoleculeStudio/warn-*.txt
-            ~/Library/Logs/Molecule Studio/*.log
-            ~/Library/Logs/DiagnosticReports/MoleculeStudio*
+            build/Alder/warn-*.txt
+            ~/Library/Logs/Alder/*.log
+            ~/Library/Logs/DiagnosticReports/Alder*
           if-no-files-found: ignore

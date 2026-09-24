@@ -26,4 +26,4 @@ def write_notices(destination, version):
         if python_license.is_file():
             shutil.copy2(python_license, licenses / ('Python-' + python_license.name))
     freeze = '\n'.join(sorted(f"{dist.metadata['Name']}=={dist.version}" for dist in installed))
-    (destination / 'build-info.txt').write_text(f'Molecule Studio {version}\nPython {sys.version}\n{platform.platform()}\n\n{freeze}', encoding='utf-8')
+    (destination / 'build-info.txt').write_text(f'Alder {version}\nPython {sys.version}\n{platform.platform()}\n\n{freeze}', encoding='utf-8')

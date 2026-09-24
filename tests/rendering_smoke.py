@@ -9,7 +9,7 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 from PIL import Image
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
-from molecule_studio.app import Window,configure_app
+from alder.app import Window,configure_app
 app=QApplication([]);configure_app(app)
 w=Window();w.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen,True);w.show()
 errors=[];w.bridge.error.connect(errors.append);w.builder_bridge.error.connect(errors.append)

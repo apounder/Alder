@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import zipfile
 import pytest
-from molecule_studio.mlip import environment, offline, registry
+from alder.mlip import environment, offline, registry
 
 
 def test_local_model_copy_checks_digest_and_never_downloads(tmp_path,monkeypatch):
@@ -38,7 +38,7 @@ def test_bundle_integrity_paths_and_cancellation(tmp_path):
 
 
 def test_bundle_route_never_bootstraps_online(tmp_path,monkeypatch):
-    monkeypatch.setenv('MOLECULE_STUDIO_OFFLINE_BUNDLE',str(tmp_path/'kit'))
+    monkeypatch.setenv('ALDER_OFFLINE_BUNDLE',str(tmp_path/'kit'))
     def install(directory,root,backend,emit,cancelled):
         assert directory==tmp_path/'kit' and backend=='aimnet2'
         raise ValueError('Offline kit unavailable')

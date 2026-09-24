@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 480" role="img" aria-labelledby="title desc">
+  <title id="title">Alder molecular studio artwork</title>
+  <desc id="desc">The Alder leaf emblem beside a single-barrier reaction energy profile.</desc>
+  <defs>
+    <symbol id="leaf" viewBox="0 0 512 512">
+      <path fill="#f4f7ef" d="M256 72c-17 22-27 45-45 52-18 2-30 26-50 33-17 6-24 27-43 35-13 9-18 26-19 39-14 16-15 37-7 51-8 17-4 38 8 50-2 19 9 37 26 45 6 18 26 30 47 31 13 11 35 13 52 8 13 4 21 16 23 30v15q8 13 16 0v-15c2-14 10-26 23-30 17 5 39 3 52-8 21-1 41-13 47-31 17-8 28-26 26-45 12-12 16-33 8-50 8-14 7-35-7-51-1-13-6-30-19-39-19-8-26-29-43-35-20-7-32-31-50-33-18-7-28-30-45-52Z"/>
+      <g fill="none" stroke="#18382b" stroke-linecap="round" stroke-linejoin="round" stroke-width="13">
+        <path d="M256 163v252"/>
+        <path d="m256 204-76 94-34 27"/>
+        <path d="m256 204 76 94 34 27"/>
+      </g>
+      <g fill="#18382b">
+        <circle cx="256" cy="204" r="23"/>
+        <circle cx="180" cy="298" r="21"/>
+        <circle cx="332" cy="298" r="21"/>
+        <circle cx="256" cy="379" r="21"/>
+      </g>
+    </symbol>
+    <linearGradient id="panel" x2="1" y2="1">
+      <stop stop-color="#fffefa"/>
+      <stop offset="1" stop-color="#f2f6ed"/>
+    </linearGradient>
+    <radialGradient id="aura">
+      <stop stop-color="#99b9a0" stop-opacity=".82"/>
+      <stop offset="1" stop-color="#cdddc9" stop-opacity=".42"/>
+    </radialGradient>
+    <radialGradient id="node" cx=".32" cy=".26" r=".8">
+      <stop stop-color="#6b947a"/>
+      <stop offset=".4" stop-color="#245440"/>
+      <stop offset="1" stop-color="#12392c"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="480" fill="#f7f9f3"/>
+  <rect x="20" y="30" width="420" height="420" rx="72" fill="#18382b"/>
+  <use href="#leaf" x="0" y="0" width="460" height="480"/>
+  <rect x="460" y="30" width="1120" height="420" rx="72" fill="url(#panel)" stroke="#dbe6d9" stroke-width="2"/>
+  <path d="M788 107c51-38 106-30 146-61 33-25 80 1 98 36 42-20 93-17 124 16 32 32 24 76 58 111 31 33 37 81 6 111-26 25-32 69-77 74-44 4-59 41-106 30-43-10-66 19-112 2-36-13-55-42-100-38-41 3-61-32-63-68-36-20-42-72-14-104-13-42-2-83 40-109Z" fill="#dce9da"/>
+  <path d="M836 113c38-24 77-19 112-45 28-21 66 1 83 29 37-16 77-13 101 13 29 31 20 66 48 94 25 27 29 64 6 88-24 23-27 55-65 63-35 7-52 33-90 25-39-8-60 17-98 1-31-13-47-33-85-32-33 1-53-27-53-58-29-18-30-56-10-80-11-38 7-74 51-98Z" fill="url(#aura)"/>
+  <use href="#leaf" x="801" y="65" width="350" height="350"/>
+  <g fill="none" stroke="#9db8a4" stroke-width="2" stroke-dasharray="9 7">
+    <path d="M1250 275h127"/>
+    <path d="M1470 342h77"/>
+  </g>
+  <path d="M1250 275C1320 276 1330 115 1392 115S1470 343 1526 342" fill="none" stroke="#183f30" stroke-width="6" stroke-linecap="round"/>
+  <g fill="url(#node)">
+    <circle cx="1250" cy="275" r="16"/>
+    <circle cx="1392" cy="115" r="16"/>
+    <circle cx="1526" cy="342" r="16"/>
+  </g>
+</svg>

@@ -1,4 +1,4 @@
-name: molecule-studio
+name: alder
 channels:
   - conda-forge
   - nodefaults

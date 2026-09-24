@@ -14,7 +14,7 @@ import tomllib
 from release_files import write_notices
 
 ROOT = Path(__file__).resolve().parents[1]
-APP_NAME = 'Molecule Studio.app'
+APP_NAME = 'Alder.app'
 
 
 def run(*args, **kwargs):
@@ -24,7 +24,7 @@ def run(*args, **kwargs):
 def verify_app(app, architecture):
     with (app / 'Contents' / 'Info.plist').open('rb') as stream:
         info = plistlib.load(stream)
-    if info['CFBundleIdentifier'] != 'org.moleculestudio.desktop':
+    if info['CFBundleIdentifier'] != 'org.alder.desktop':
         raise RuntimeError('Unexpected app bundle identifier.')
     run('/usr/bin/lipo', '-verify_arch', architecture, app / 'Contents' / 'MacOS' / info['CFBundleExecutable'])
     run('/usr/bin/codesign', '--verify', '--deep', '--strict', app)
@@ -40,7 +40,7 @@ def main():
     version = tomllib.loads((ROOT / 'pyproject.toml').read_text(encoding='utf-8'))['project']['version']
     release = ROOT / 'dist' / 'release'
     release.mkdir(parents=True, exist_ok=True)
-    stem = f'MoleculeStudio-{version}-macOS-{label}'
+    stem = f'Alder-{version}-macOS-{label}'
     notes = ROOT / 'build' / 'macos-notices'
     if notes.exists():
         shutil.rmtree(notes)
@@ -50,7 +50,7 @@ def main():
     env['PYINSTALLER_STRICT_BUNDLE_CODESIGN_ERROR'] = '1'
     env['PYINSTALLER_VERIFY_BUNDLE_SIGNATURE'] = '1'
     run(sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean',
-        ROOT / 'packaging' / 'MoleculeStudio.spec', cwd=ROOT, env=env)
+        ROOT / 'packaging' / 'Alder.spec', cwd=ROOT, env=env)
     app = ROOT / 'dist' / APP_NAME
     verify_app(app, architecture)
 
@@ -61,14 +61,14 @@ def main():
     dmg = release / f'{stem}.dmg'
     report = ROOT / 'build' / f'macos-{label}-smoke.json'
     report.unlink(missing_ok=True)
-    with tempfile.TemporaryDirectory(prefix='Molecule Studio é ') as temporary:
+    with tempfile.TemporaryDirectory(prefix='Alder é ') as temporary:
         folder = Path(temporary)
         stage = folder / 'disk-image'
         stage.mkdir()
         run('/usr/bin/ditto', app, stage / APP_NAME)
         (stage / 'Applications').symlink_to('/Applications', target_is_directory=True)
         shutil.copy2(notes / 'START-HERE.txt', stage / 'START-HERE.txt')
-        run('/usr/bin/hdiutil', 'create', '-volname', 'Molecule Studio', '-srcfolder', stage,
+        run('/usr/bin/hdiutil', 'create', '-volname', 'Alder', '-srcfolder', stage,
             '-format', 'UDZO', '-ov', dmg)
         run('/usr/bin/hdiutil', 'verify', dmg)
         mount = folder / 'mounted'

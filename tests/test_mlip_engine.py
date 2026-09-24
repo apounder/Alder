@@ -3,9 +3,9 @@ import numpy as np
 import pytest
 from ase import Atoms
 from ase.calculators.calculator import Calculator, all_changes
-from molecule_studio.mlip.contract import snapshot, coordinate, wrap_angle, validate_constraints
-from molecule_studio.mlip.engine import Context, run, Cancelled, frequencies, rmsd
-from molecule_studio.mlip.store import Store
+from alder.mlip.contract import snapshot, coordinate, wrap_angle, validate_constraints
+from alder.mlip.engine import Context, run, Cancelled, frequencies, rmsd
+from alder.mlip.store import Store
 
 class PairPotential(Calculator):
     implemented_properties=['energy','forces']
@@ -126,7 +126,7 @@ def test_rmsd_does_not_reflect():
 
 
 def test_periodic_charge_identity_and_model_policies(tmp_path):
-    from molecule_studio.mlip.registry import validate_model, model_path
+    from alder.mlip.registry import validate_model, model_path
     s=dict(numbers=[8,1,1],positions=[[0,0,0],[1,0,0],[0,1,0]],charge=0,multiplicity=1)
     c=dict(backend='mace',checkpoint='MACE-ANI-CC',device='cpu',precision='float64')
     assert validate_model(c,s,'sp')['name']=='MACE-ANI-CC'
@@ -161,7 +161,7 @@ def test_exact_md_matches_uninterrupted(tmp_path):
 
 
 def test_signed_torsion_constraint_crosses_wrap():
-    from molecule_studio.mlip.engine import apply_constraints, residuals
+    from alder.mlip.engine import apply_constraints, residuals
     a=Atoms('CCCC',positions=[[-1,0,0],[0,0,0],[0,1,0],[1,1,.02]])
     original=a.positions.copy();d=[dict(kind='dihedral',atoms=[0,1,2,3],value=-179)]
     apply_constraints(a,d)
@@ -173,7 +173,7 @@ def test_nonfinite_and_memory_failure_keep_partial(tmp_path):
     c=context(tmp_path,'sp');c.save();assert c.store.count(c.id)==1
     class Broken(PairPotential):
         def calculate(self,*args,**kw):raise MemoryError('simulated allocation failure')
-    from molecule_studio.mlip.engine import GuardedCalculator
+    from alder.mlip.engine import GuardedCalculator
     c.atoms.calc=GuardedCalculator(Broken(),c.check)
     with pytest.raises(MemoryError):c.save()
     assert c.store.count(c.id)==1
@@ -189,7 +189,7 @@ def test_constrained_frequencies_dofs(tmp_path):
 
 @pytest.mark.parametrize('failure,status',[(MemoryError('allocation failed'),'failed'),(InterruptedError('parent gone'),'interrupted')])
 def test_worker_records_partial_failure(tmp_path,monkeypatch,failure,status):
-    from molecule_studio.mlip import worker,adapters,engine
+    from alder.mlip import worker,adapters,engine
     store=Store(tmp_path/'worker.sqlite')
     data=snapshot(dict(numbers=[1,1],positions=[[0,0,0],[1.1,0,0]],charge=0,multiplicity=1),{},'sp')
     ident=store.submit(data)
@@ -204,7 +204,7 @@ def test_worker_records_partial_failure(tmp_path,monkeypatch,failure,status):
 
 
 def test_queue_claim_is_exclusive_and_redaction(tmp_path):
-    from molecule_studio.mlip.environment import redact
+    from alder.mlip.environment import redact
     c=context(tmp_path,'sp');other=c.store.submit(c.data)
     second=Store(c.store.path);assert not second.claim(other)
     c.store.state(c.id,'completed');assert second.claim(other)
@@ -242,7 +242,7 @@ def test_exact_restart_rejects_changed_environment(tmp_path):
 
 
 def test_scan_preserves_failed_point_and_traversal(tmp_path,monkeypatch):
-    from molecule_studio.mlip import engine
+    from alder.mlip import engine
     c=context(tmp_path,'scan',{'scans':[dict(kind='bond',atoms=[0,1],start=1,stop=1.3,points=4)]})
     original=engine.optimize
     def fail_middle(ctx,**kwargs):
@@ -258,7 +258,7 @@ def test_scan_preserves_failed_point_and_traversal(tmp_path,monkeypatch):
 
 def test_frozen_external_environment_isolated(monkeypatch,tmp_path):
     import os,sys
-    from molecule_studio.mlip.environment import external_environment
+    from alder.mlip.environment import external_environment
     bundle=str(tmp_path/'bundle');original=str(tmp_path/'native')
     monkeypatch.setattr(sys,'frozen',True,raising=False);monkeypatch.setattr(sys,'_MEIPASS',bundle,raising=False)
     monkeypatch.setenv('LD_LIBRARY_PATH',bundle);monkeypatch.setenv('LD_LIBRARY_PATH_ORIG',original)

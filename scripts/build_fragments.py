@@ -6,7 +6,7 @@ from rdkit import Chem
 from rdkit.Chem import rdDepictor
 from rdkit.Chem.Draw import rdMolDraw2D
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
-from molecule_studio.structure import embed_3d
+from alder.structure import embed_3d
 
 # SMILES order defines the numbered atoms in both the diagram and the 3D model.
 GROUPS = [
@@ -74,7 +74,7 @@ def build():
         points = [[drawer.GetDrawCoords(i).x, drawer.GetDrawCoords(i).y] for i in range(mol.GetNumAtoms())]
         library.append(dict(name=name, category=category, smiles=smiles, root=root, model=model,
                             svg=drawer.GetDrawingText(), points=points))
-    path = Path(__file__).resolve().parents[1] / 'src/molecule_studio/assets/fragments.json'
+    path = Path(__file__).resolve().parents[1] / 'src/alder/assets/fragments.json'
     path.write_text(json.dumps(library, separators=(',', ':'), ensure_ascii=False), encoding='utf-8')
     print(f'Built {len(library)} offline fragments: {path}')
 

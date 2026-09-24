@@ -17,8 +17,8 @@ import zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'src'))
-from molecule_studio.mlip.environment import ENV_VERSION, PYTHON_VERSION, managed_environment, managed_python
-from molecule_studio.mlip.registry import CATALOGUE, checksum, model_path
+from alder.mlip.environment import ENV_VERSION, PYTHON_VERSION, managed_environment, managed_python
+from alder.mlip.registry import CATALOGUE, checksum, model_path
 
 PUBLIC_MODELS=['MACE-ANI-CC','aimnet2-wb97m-d3_0','aimnet2-b973c-2025-d3_0','aimnet2-nse_0','aimnet2-rxn_0']
 
@@ -34,12 +34,12 @@ def main():
     parser.add_argument('--output',type=Path,default=ROOT/'.build-tools/mlip-offline')
     args=parser.parse_args();out=args.output.resolve();source=args.environment_root.resolve()
     if sys.platform!='win32' or sysconfig.get_platform()!='win-amd64':raise SystemExit('Prepare this kit on Windows x64 Python.')
-    if os.environ.get('MOLECULE_STUDIO_OFFLINE_BUNDLE'):raise SystemExit('Unset MOLECULE_STUDIO_OFFLINE_BUNDLE for the online preparation step.')
+    if os.environ.get('ALDER_OFFLINE_BUNDLE'):raise SystemExit('Unset ALDER_OFFLINE_BUNDLE for the online preparation step.')
     out.mkdir(parents=True,exist_ok=True);(out/'manifest.json').unlink(missing_ok=True)
     for cached in (out/'models').glob('*/*'):
         if cached.name not in PUBLIC_MODELS:raise ValueError('Offline kit contains a non-public or unlisted checkpoint; use a clean output directory.')
     wheels=out/'wheels';wheels.mkdir(exist_ok=True)
-    worker=ROOT/'src/molecule_studio/mlip/worker.py';versions={};used_wheels=set()
+    worker=ROOT/'src/alder/mlip/worker.py';versions={};used_wheels=set()
     notices=out/'ThirdPartyLicenses'
     if notices.exists():shutil.rmtree(notices)
     notices.mkdir()
@@ -92,7 +92,7 @@ def main():
                     licenses.writestr(name,z.read(name))
     # uv is bootstrapped from an official wheel, whose licences ship in this kit too.
     uvmeta=out/'uv-wheel';uvmeta.mkdir(exist_ok=True)
-    from molecule_studio.mlip.environment import UV_VERSION
+    from alder.mlip.environment import UV_VERSION
     run([sys.executable,'-m','pip','download','--no-deps','--only-binary=:all:',f'uv=={UV_VERSION}','--dest',uvmeta])
     for wheel in uvmeta.glob('*.whl'):
         with zipfile.ZipFile(wheel) as z:
@@ -120,7 +120,7 @@ def main():
     (out/'manifest.json').write_text(json.dumps(data,indent=2)+'\n',encoding='utf-8')
     (out/'README.txt').write_text('Windows x64 CPU calculation kit. Local installation only: Python, uv, locked wheels and five public checkpoints.\n'
         'UMA / MACE-OFF23 weights and credentials are not included. Licences are in ThirdPartyLicenses and inside each wheel.\n'
-        'This directory contains no jobs, user configuration or Hugging Face login. Keep the complete directory beside MoleculeStudio.exe.\n',encoding='utf-8')
+        'This directory contains no jobs, user configuration or Hugging Face login. Keep the complete directory beside Alder.exe.\n',encoding='utf-8')
     print(f'Offline kit prepared: {out}',flush=True)
 
 

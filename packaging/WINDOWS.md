@@ -11,9 +11,9 @@ build, download its installer or portable ZIP; rebuilding is unnecessary.
 
 ## Build with GitHub's website — no local command line
 
-1. Put the contents of **molecule-studio** at the root of a GitHub repository.
+1. Put the contents of **alder** at the root of a GitHub repository.
    Include `.github/workflows/windows.yml`, `packaging`, `scripts`, `src`, `web`,
-   `tests`, `pyproject.toml`, and `run_studio.py`. Exclude `.venv`, `.runtime`,
+   `tests`, `pyproject.toml`, and `run_alder.py`. Exclude `.venv`, `.runtime`,
    `.build-tools`, `node_modules`, `build`, and `dist`. The checked-in editor HTML and JS already contain their
    dependencies; this workflow does not run npm. The editable renderer and
    builder sources are included in `web` for development.
@@ -27,8 +27,8 @@ build, download its installer or portable ZIP; rebuilding is unnecessary.
    executable with Python removed from PATH, installs it, checks the installed
    copy, and uninstalls it. Internet requests from its embedded editor are
    blocked during the application check.
-4. Open the successful run and download **MoleculeStudio-Windows-x64-GUI**
-   or **MoleculeStudio-Windows-x64-MLIP-Offline**. Extract the chosen artifact to
+4. Open the successful run and download **Alder-Windows-x64-GUI**
+   or **Alder-Windows-x64-MLIP-Offline**. Extract the chosen artifact to
    obtain its installer, portable ZIP and SHA-256 checksums. Actions artifacts require a GitHub login and expire after 30 days.
 5. Test the installer on a normal Windows PC. Then open **Releases → Draft a
    new release**, choose/create the tag `v0.4.0`, and attach the installer,
@@ -46,7 +46,7 @@ output are excluded from source control.
 
 ## What the download contains
 
-- A console-free `MoleculeStudio.exe` with its own Python runtime, PySide6/Qt
+- A console-free `Alder.exe` with its own Python runtime, PySide6/Qt
   WebEngine, native RDKit, calculation parsers, and offline 2D/3D/WASM assets.
 - A per-user Inno Setup installer, Start-menu shortcut, optional desktop
   shortcut, and entry in Windows **Settings → Apps → Installed apps**.
@@ -61,7 +61,7 @@ access/licence approval and a subsequent online download remain necessary.
 The offline kit excludes credentials, user jobs and configuration. CUDA and
 macOS/Linux offline kits are not part of this Windows build.
 
-New builds run `MoleculeStudio.exe --setup` during interactive installation;
+New builds run `Alder.exe --setup` during interactive installation;
 silent installs skip prompts. A fresh portable launch also offers the same wizard.
 It detects the destination computer, checks account access, and installs selected
 models. CUDA uses online driver-selected packages, not the bundled CPU wheels.
@@ -118,7 +118,7 @@ use their graphics drivers.
 
 If the build fails, download **Windows-build-diagnostics** from the Actions run.
 The packaged app writes startup output to
-`%LOCALAPPDATA%\Molecule Studio\studio.log`. Its smoke report lists completed
+`%LOCALAPPDATA%\Alder\studio.log`. Its smoke report lists completed
 checks and the first exception. Build success checks the runner, not every
 Windows graphics driver: still verify rotation, file drops, vibration playback,
 surfaces, and a high-resolution figure on a real PC before publishing.
@@ -126,7 +126,7 @@ surfaces, and a high-resolution figure on a real PC before publishing.
 The application check can also be invoked explicitly from PowerShell:
 
 ```powershell
-& .\MoleculeStudio.exe --smoke-test "$env:TEMP\studio-check.json" "C:\path\to\molecule-studio\tests\data"
+& .\Alder.exe --smoke-test "$env:TEMP\studio-check.json" "C:\path\to\alder\tests\data"
 ```
 
 References: [PyInstaller's build model](https://pyinstaller.org/en/stable/operating-mode.html),

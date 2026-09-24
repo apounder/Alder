@@ -5,10 +5,10 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"src"))
 import numpy as np
 from ase import Atoms
 from ase.build import molecule
-from molecule_studio.mlip.contract import snapshot
-from molecule_studio.mlip.adapters import create
-from molecule_studio.mlip.engine import Context, run, frequencies
-from molecule_studio.mlip.store import Store
+from alder.mlip.contract import snapshot
+from alder.mlip.adapters import create
+from alder.mlip.engine import Context, run, frequencies
+from alder.mlip.store import Store
 
 
 def numerical_checks(ctx):

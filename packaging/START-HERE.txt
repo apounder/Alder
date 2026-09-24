@@ -1,13 +1,13 @@
-MOLECULE STUDIO FOR WINDOWS
+ALDER FOR WINDOWS
 
 Portable ZIP: right-click the ZIP, choose Extract All, open the extracted
-MoleculeStudio or MoleculeStudio-MLIP-Offline folder, and double-click
-MoleculeStudio.exe.
+Alder or Alder-MLIP-Offline folder, and double-click
+Alder.exe.
 Keep the _internal folder next to the executable. For MLIP Offline, also keep
 the complete mlip-offline folder. Do not run from inside the ZIP.
 
-Installer: double-click MoleculeStudio-<version>-Windows-x64-<edition>-Setup.exe and
-follow the installation and model-setup windows. Open Molecule Studio from the Start menu.
+Installer: double-click Alder-<version>-Windows-x64-<edition>-Setup.exe and
+follow the installation and model-setup windows. Open Alder from the Start menu.
 Installation is for your Windows account and does not require administrator
 rights. Remove it through Windows Settings > Apps > Installed apps.
 
@@ -40,7 +40,7 @@ is included. The initial build was checked on a Windows 11 ARM64 PC.
 Current builds are unsigned; Windows may display an unknown-publisher warning.
 
 If startup fails, diagnostics are written to:
-%LOCALAPPDATA%\Molecule Studio\studio.log
+%LOCALAPPDATA%\Alder\studio.log
 
 Third-party notices are included in ThirdPartyLicenses and in
-_internal\molecule_studio\assets\*-LICENSE*.txt.
+_internal\alder\assets\*-LICENSE*.txt.

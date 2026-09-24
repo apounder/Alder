@@ -4,14 +4,14 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from molecule_studio.data import BOHR, Calculation, read_calculation, read_cube, register_cube, validate_mapping
+from alder.data import BOHR, Calculation, read_calculation, read_cube, register_cube, validate_mapping
 
 DATA = Path(__file__).parent / "data"
 
 
 @pytest.mark.parametrize('fail', [False, True])
 def test_import_closes_files_even_when_parser_fails(monkeypatch, fail):
-    import molecule_studio.data as module
+    import alder.data as module
     parser = module.ccopen(str(DATA/'gaussian-opt.log'))
     monkeypatch.setattr(module, 'ccopen', lambda *args, **kwargs: parser)
     if fail:

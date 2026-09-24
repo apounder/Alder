@@ -7,7 +7,7 @@ import time
 from types import SimpleNamespace
 
 import pytest
-from molecule_studio.mlip import environment
+from alder.mlip import environment
 
 
 def test_availability_requires_no_network_for_public_or_cached_models(monkeypatch, tmp_path):

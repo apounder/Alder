@@ -70,10 +70,10 @@ jobs:
         run: |
           foreach ($setup in (Get-ChildItem dist/release/*-Setup.exe)) {
             $offline = $setup.Name -like '*-MLIP-Offline-*'
-            $installDir = Join-Path $env:RUNNER_TEMP 'Molecule Studio installé'
+            $installDir = Join-Path $env:RUNNER_TEMP 'Alder installé'
             $install = Start-Process $setup.FullName -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$installDir`"", "/LOG=`"$env:GITHUB_WORKSPACE\build\installer.log`"" -Wait -PassThru
             if ($install.ExitCode -ne 0) { throw "Installer failed: $($install.ExitCode)" }
-            $shortcut = Join-Path ([Environment]::GetFolderPath('Programs')) 'Molecule Studio/Molecule Studio.lnk'
+            $shortcut = Join-Path ([Environment]::GetFolderPath('Programs')) 'Alder/Alder.lnk'
             if (-not (Test-Path $shortcut)) { throw 'Start-menu shortcut is missing' }
             $reportName = if ($offline) { 'offline-installed-smoke.json' } else { 'installed-smoke.json' }
             $report = Join-Path $env:GITHUB_WORKSPACE "build/$reportName"
@@ -82,7 +82,7 @@ jobs:
             $env:PATH = "$env:SystemRoot\System32"
             Remove-Item Env:PYTHONPATH, Env:PYTHONHOME, Env:QT_PLUGIN_PATH -ErrorAction SilentlyContinue
             try {
-              $app = Start-Process "$installDir\MoleculeStudio.exe" -WorkingDirectory $env:RUNNER_TEMP -ArgumentList $arguments -PassThru
+              $app = Start-Process "$installDir\Alder.exe" -WorkingDirectory $env:RUNNER_TEMP -ArgumentList $arguments -PassThru
               if (-not $app.WaitForExit(1800000)) { $app.Kill(); throw 'Installed app timed out' }
               if ($app.ExitCode -ne 0) { throw "Installed app failed: $($app.ExitCode)" }
               $result = Get-Content $report -Raw | ConvertFrom-Json
@@ -91,13 +91,13 @@ jobs:
               $uninstall = Start-Process "$installDir\unins000.exe" -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait -PassThru
               if ($uninstall.ExitCode -ne 0) { throw "Uninstall failed: $($uninstall.ExitCode)" }
             }
-            if (Test-Path "$installDir\MoleculeStudio.exe") { throw 'Uninstall left the executable behind' }
+            if (Test-Path "$installDir\Alder.exe") { throw 'Uninstall left the executable behind' }
             if (Test-Path $shortcut) { throw 'Uninstall left the shortcut behind' }
           }
       - name: Upload GUI downloads
         uses: actions/upload-artifact@v7
         with:
-          name: MoleculeStudio-Windows-x64-GUI
+          name: Alder-Windows-x64-GUI
           path: |
             dist/release/*-GUI-*
             dist/release/SHA256SUMS.txt
@@ -108,7 +108,7 @@ jobs:
         if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.offline_mlip)
         uses: actions/upload-artifact@v7
         with:
-          name: MoleculeStudio-Windows-x64-MLIP-Offline
+          name: Alder-Windows-x64-MLIP-Offline
           path: |
             dist/release/*-MLIP-Offline-*
             dist/release/SHA256SUMS.txt
@@ -123,6 +123,6 @@ jobs:
           path: |
             build/*-smoke.json
             build/installer.log
-            build/MoleculeStudio/warn-*.txt
-            ~/AppData/Local/Molecule Studio/*.log
+            build/Alder/warn-*.txt
+            ~/AppData/Local/Alder/*.log
           if-no-files-found: ignore

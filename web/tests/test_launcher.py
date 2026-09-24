@@ -14,7 +14,7 @@ thread = Thread(target=server.serve_forever, daemon=True)
 thread.start()
 try:
     url = f"http://127.0.0.1:{server.server_port}"
-    with urlopen(url + "/MolStudio.html") as response:
+    with urlopen(url + "/Alder.html") as response:
         assert response.status == 200
         assert response.headers.get_content_type() == "text/html"
         assert response.read() == launcher.APP.read_bytes()

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Alder logo</title>
+  <desc id="desc">An alder leaf with molecular bonds and atom nodes forming its veins.</desc>
+  <rect width="512" height="512" rx="104" fill="#18382b"/>
+  <path fill="#f4f7ef" d="M256 72c-17 22-27 45-45 52-18 2-30 26-50 33-17 6-24 27-43 35-13 9-18 26-19 39-14 16-15 37-7 51-8 17-4 38 8 50-2 19 9 37 26 45 6 18 26 30 47 31 13 11 35 13 52 8 13 4 21 16 23 30v15q8 13 16 0v-15c2-14 10-26 23-30 17 5 39 3 52-8 21-1 41-13 47-31 17-8 28-26 26-45 12-12 16-33 8-50 8-14 7-35-7-51-1-13-6-30-19-39-19-8-26-29-43-35-20-7-32-31-50-33-18-7-28-30-45-52Z"/>
+  <g fill="none" stroke="#18382b" stroke-linecap="round" stroke-linejoin="round" stroke-width="13">
+    <path d="M256 163v252"/>
+    <path d="m256 204-76 94-34 27"/>
+    <path d="m256 204 76 94 34 27"/>
+  </g>
+  <g fill="#18382b">
+    <circle cx="256" cy="204" r="23"/>
+    <circle cx="180" cy="298" r="21"/>
+    <circle cx="332" cy="298" r="21"/>
+    <circle cx="256" cy="379" r="21"/>
+  </g>
+</svg>

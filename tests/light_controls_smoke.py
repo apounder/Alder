@@ -4,7 +4,7 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
 from PySide6.QtGui import QColor,QPalette
 from PySide6.QtWidgets import QApplication,QCheckBox,QDialog,QLineEdit,QPlainTextEdit,QTextEdit,QVBoxLayout
-from molecule_studio.ui import configure_app
+from alder.ui import configure_app
 
 app=QApplication.instance() or QApplication([])
 dark=QPalette();dark.setColor(QPalette.ColorRole.Base,QColor('#101010'));dark.setColor(QPalette.ColorRole.Text,QColor('#eee'))
