@@ -29,6 +29,12 @@ running. These scripts are for developers, not desktop users.
 The core tests cover parsing, editing, hydrogen substitution, fragment joining,
 spirocycles, geometry, measurements, undo, export, and share-link round trips.
 
+After `npm run package:studio`, run `npm run test:figures` for offline desktop
+rendering checks in Playwright. This needs Chromium but no Vite server. It checks
+actual image colors under depth fog, white/transparent backgrounds, camera
+projections, presets, and NCI/vdW overlays, saving images in
+`test-results/figures`. Software ray tracing can take several minutes.
+
 Third-party sources: [Three.js](https://threejs.org/) (MIT),
 [RDKit](https://www.rdkit.org/) (BSD), [LZ-String](https://github.com/pieroxy/lz-string)
 (MIT), [three-gpu-pathtracer](https://github.com/gkjohnson/three-gpu-pathtracer),

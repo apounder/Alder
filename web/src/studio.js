@@ -43,6 +43,7 @@ async function command(cmd) {
     view.setStyle(cmd);editor.update();return;
   }
   if(cmd.type==='appearance'){editor.clearFragmentPreview();view.setAppearance(cmd);return;}
+  if(cmd.type==='figureAddons'){view.setFigureAddons(cmd);return;}
   if(cmd.type==='fog'){view.setFog(cmd);return;}
   if(cmd.type==='fogPick'){editor.cancel();view.setDepthCuePick(cmd.enabled);return;}
   if(cmd.type==='bondOrder'){editor.bondKind=['dative','ts'].includes(cmd.order)?cmd.order:null;editor.bondOrder=editor.bondKind?1:cmd.order;editor.setTool(editor.bondKind||editor.tool==='bond'?'bond':'add');return;}

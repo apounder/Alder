@@ -364,6 +364,30 @@ Calculation-view bond edits persist while that calculation is open. To retain
 them between sessions, use **Build → Edit geometry → Export MOL** and reopen
 that MOL file. Original calculation and XYZ files are not modified.
 
+**View → Shared 3D appearance** includes five xyzrender-inspired presets: Flat,
+Tube, Ball and tube, Wire, and vdW. These adapt the
+[xyzrender styles](https://xyzrender.readthedocs.io/en/latest/configuration.html)
+to Alder's interactive 3D renderer. You can still adjust the representation,
+outlines, projection, and atom size after selecting a preset.
+
+Under **Figure → Figure add-ons**, enable **Automatic NCI contact lines** or
+**Translucent van der Waals spheres** (5–60% opacity). Both are included in
+Studio and ray-traced images and update with trajectory/movie frames. Add-ons
+do not change bonds, exported molecular structures, or calculation coordinates.
+Use **Fit** after enabling spheres if they extend beyond the current framing.
+
+Contact lines are geometry-based suggestions: teal for explicit hydrogen bonds
+(N/O/S–H···N/O/S/F, angle at least 120°, H···acceptor ≤2.7 Å and donor···acceptor
+≤3.6 Å), purple for Cl/Br/I halogen contacts (angle at least 150°), and gray for
+other short heavy-atom contacts within 95% of the sum of vdW radii. All pairs
+must be between 55% and 100% of that radius sum; directly bonded, 1–3, and 1–4
+neighbors are excluded. Enable hydrogens to display H-bond lines. Supported
+radii are H, C, N, O, F, P, S, Cl, Br, and I; other elements are skipped by these
+add-ons. This is a distance/angle heuristic, not a full interaction assignment:
+it does not perceive aromatic centroids, classify π-stacking, or calculate
+interaction energies. For density-based NCI surfaces, continue using the cube
+field controls.
+
 Ray tracing requires WebGL 2 and uses physical lighting in place of preview
 outlines and screen-space ambient occlusion. Higher sample counts reduce noise
 and take longer. Video exports retain the camera and molecular appearance,

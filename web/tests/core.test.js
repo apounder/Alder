@@ -411,3 +411,42 @@ test("signed dihedrals agree with ASE and wrap at 180 degrees", () => {
   atoms[3].z=-2;assert.equal(measure(atoms,[0,1,2,3]).value,-90);
   atoms[3].z=0;atoms[3].x=2;assert.equal(measure(atoms,[0,1,2,3]).value,-180);
 });
+
+
+test('Fragment junction geometry follows the chosen atom and rejects excess valence atomically', async () => {
+  const {planFragment}=await import('../src/editor/fragments.js');
+  const {point,neighbors}=await import('../src/editor/placement.js');
+  const {removeAtoms}=await import('../src/editor/hydrogens.js');
+  const library=JSON.parse(fs.readFileSync(new URL('../../src/alder/assets/fragments.json',import.meta.url),'utf8'));
+  const fragment=name=>library.find(f=>f.name===name),methane=fragment('Methyl').model;
+  for(const [name,root,expected,tolerance] of [['Vinyl',0,120,5],['Vinyl',1,120,5],['Ethyl',1,109.47,5],['Ethynyl',1,180,1],['Methoxy',0,109,10]]) {
+    const f=fragment(name),inside=neighbors(f.model,root).find(i=>f.model.atoms[i].el!=='H');
+    for(const autoH of [false,true])for(const mode of ['attach','replace']) {
+      const anchor=mode==='attach'?0:methane.atoms.findIndex(a=>a.el==='H');
+      const result=planFragment(methane,{...f,root},{anchor,mode,hydrogens:autoH}),m=result.model,j=result.selection[0];
+      const next=neighbors(m,j).find(i=>i!==0&&m.atoms[i].el===f.model.atoms[inside].el);
+      const center=point(m.atoms[j]),a=point(m.atoms[0]).sub(center),b=point(m.atoms[next]).sub(center);
+      const angle=a.angleTo(b)*180/Math.PI;
+      assert.ok(Math.abs(angle-expected)<tolerance,`${name} root ${root}: ${angle}`);
+      assert.ok(Math.abs(a.length()-idealLength(m.atoms[0].el,m.atoms[j].el))<1e-8);
+    }
+  }
+  // An implicit-H host needs the same sp2 direction as a prepared fragment.
+  const vinyl=structuredClone(fragment('Vinyl').model);
+  removeAtoms(vinyl,vinyl.atoms.flatMap((a,i)=>a.el==='H'?[i]:[]));
+  const result=planFragment(vinyl,fragment('Methyl'),{anchor:0,mode:'attach'}),m=result.model;
+  const angle=point(m.atoms[1]).sub(point(m.atoms[0])).angleTo(point(m.atoms[result.selection[0]]).sub(point(m.atoms[0])))*180/Math.PI;
+  assert.ok(Math.abs(angle-120)<1e-8);
+  // Every numbered atom is selectable; only chemically available sites may gain a bond.
+  for(const f of library)for(let root=0;root<f.points.length;root++) {
+    const atom=f.model.atoms[root],capacity=neighbors(f.model,root).filter(i=>f.model.atoms[i].el==='H').length+(atom.radical||0);
+    if(capacity)assert.doesNotThrow(()=>planFragment(methane,f,{root,anchor:0,mode:'attach'}),`${f.name} ${root}`);
+    else assert.throws(()=>planFragment(methane,f,{root,anchor:0,mode:'attach'}),/no room/,`${f.name} ${root}`);
+  }
+  const tert=fragment('tert-Butyl'),full=planFragment(methane,tert,{anchor:0,mode:'attach'});
+  const before=structuredClone(full.model);
+  assert.throws(()=>planFragment(full.model,fragment('Methyl'),{anchor:full.selection[0],mode:'attach'}),/no room/);
+  assert.deepEqual(full.model,before);
+  const ring=fragment('Cyclohexane').model;
+  assert.throws(()=>planFragment(ring,fragment('Benzene'),{anchor:0,root:0}),/no room/);
+});

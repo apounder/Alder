@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 import { MolecularView } from './viewer.js';
-import { CPK } from './chemistry.js';
+import { CPK, vdWR } from './chemistry.js';
+import { detectContacts } from './contacts.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -21,6 +22,8 @@ export class StudioView extends MolecularView {
     this.keyLight = new THREE.DirectionalLight(0xffffff, 2.1);
     this.scene.add(this.keyLight, this.keyLight.target);
     this.outlineMeshes = [];
+    this.figureAddons={nci:false,vdw:false,opacity:.18};
+    this.figureGroup=new THREE.Group();this.scene.add(this.figureGroup);
     this.outlineCylinder = new THREE.CylinderGeometry(1,1,1,20,1,true);
     this.controls.dispose();
     this.controls = new TrackballControls(this.camera, this.renderer.domElement);
@@ -53,6 +56,41 @@ export class StudioView extends MolecularView {
   setMeasurementCount(count) {
     this.measurementCount=[2,3,4].includes(count)?count:0;
     this.updateOverlays([],null);
+  }
+  setFigureAddons(options) {
+    for(const key of ['nci','vdw'])if(options[key]!==undefined)this.figureAddons[key]=!!options[key];
+    if(Number.isFinite(options.opacity))this.figureAddons.opacity=THREE.MathUtils.clamp(options.opacity,.05,.6);
+    this.updateFigureAddons();this.invalidate();
+  }
+  updateFigureAddons() {
+    if(!this.figureGroup)return;
+    for(const mesh of [...this.figureGroup.children]){
+      this.figureGroup.remove(mesh);mesh.material.dispose();mesh.dispose();
+    }
+    const {atoms}=this.model,options=this.figureAddons,dummy=new THREE.Object3D();
+    const make=(geometry,items,material,pose)=>{
+      if(!items.length){material.dispose();return;}
+      const mesh=new THREE.InstancedMesh(geometry,material,items.length);
+      items.forEach((item,i)=>{
+        dummy.quaternion.identity();const color=pose(item,dummy);
+        dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);mesh.setColorAt(i,new THREE.Color(color));
+      });
+      mesh.computeBoundingSphere();this.figureGroup.add(mesh);
+    };
+    this.contacts=options.nci?detectContacts(this.model):[];
+    const dots=[];
+    for(const contact of this.contacts){
+      if(!this.visible(contact.a)||!this.visible(contact.b))continue;
+      const a=atoms[contact.a],b=atoms[contact.b],count=Math.ceil(contact.distance/.18);
+      for(let k=1;k<count;k++)dots.push({a,b,t:k/count,kind:contact.kind});
+    }
+    make(this.largeSphereGeometry,dots,new THREE.MeshPhongMaterial({shininess:10}),({a,b,t,kind},d)=>{
+      d.position.set(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,a.z+(b.z-a.z)*t);d.scale.setScalar(.035);
+      return {hydrogen:'#258b81',halogen:'#a16ca8',close:'#809087'}[kind];
+    });
+    if(options.vdw)make(this.largeSphereGeometry,atoms.filter((a,i)=>this.visible(i)&&vdWR[a.el]),
+      new THREE.MeshPhongMaterial({transparent:true,opacity:options.opacity,depthWrite:false,shininess:5}),
+      (a,d)=>{d.position.set(a.x,a.y,a.z);d.scale.setScalar(vdWR[a.el]);return this.color(a);});
   }
   reportMeasurement(measurement,text,ids) {
     const state=JSON.stringify({count:this.measurementCount||0,
@@ -173,7 +211,9 @@ export class StudioView extends MolecularView {
     // One raster depth pass applies the same cue to ray-traced pixels. Source-atop
     // preserves the ray tracer's alpha, including antialiased transparent edges.
     if(!this.fogMaterial){
-      this.fogMaterial=new THREE.MeshBasicMaterial({side:THREE.DoubleSide});
+      // The canvas uses premultiplied alpha. Without this, fractional fog writes
+      // full white RGB and washes out the molecule when composited onto the image.
+      this.fogMaterial=new THREE.MeshBasicMaterial({side:THREE.DoubleSide,premultipliedAlpha:true});
       this.fogMaterial.onBeforeCompile=shader=>{
         shader.fragmentShader=shader.fragmentShader.replace('#include <fog_fragment>',
           '#ifdef USE_FOG\ngl_FragColor.rgb = fogColor;\ngl_FragColor.a = smoothstep(fogNear, fogFar, vFogDepth);\n#endif');
@@ -263,14 +303,13 @@ export class StudioView extends MolecularView {
   }
   color(a) { return a.structureColor || this.preset.colors[a.el] || CPK[a.el] || '#d9d9d9'; }
   bondRadius() { return this.preset.bondRadius; }
-  bondColor(a) { return a?.structureColor || this.preset.bondColor; }
+  bondColor(a) { return a?.structureColor || (this.preset.elementBonds&&a?this.color(a):this.preset.bondColor); }
   bondAxis(dir,bond) {
     // Keep ring double bonds in the ring plane instead of hiding one behind the other.
-    const {atoms,bonds}=this.model;
+    const {atoms}=this.model;
     for(const endpoint of [bond.a,bond.b]) {
-      const adjacent=bonds.filter(b=>b!==bond&&(b.a===endpoint||b.b===endpoint))
-        .map(b=>b.a===endpoint?b.b:b.a).sort((a,b)=>(atoms[a].el==='H')-(atoms[b].el==='H'));
-      for(const j of adjacent) {
+      for(const j of this.bondNeighbors[endpoint]) {
+        if(j===(endpoint===bond.a?bond.b:bond.a))continue;
         const a=atoms[endpoint],p=atoms[j],v=new THREE.Vector3(p.x-a.x,p.y-a.y,p.z-a.z);
         const normal=dir.clone().cross(v);
         if(normal.lengthSq()>1e-6)return dir.clone().cross(normal.normalize()).normalize();
@@ -280,7 +319,7 @@ export class StudioView extends MolecularView {
     if(Math.abs(dir.dot(normal))>.9)normal.set(0,1,0);
     return dir.clone().cross(normal).normalize();
   }
-  material() { return new THREE.MeshPhongMaterial({shininess:28,specular:0x333333}); }
+  material() { return this.preset.flat ? new THREE.MeshBasicMaterial() : new THREE.MeshPhongMaterial({shininess:28,specular:0x333333}); }
   setAppearance(options) {
     Object.assign(this.appearance,options);
     const orthographic=this.appearance.orthographic;
@@ -309,10 +348,13 @@ export class StudioView extends MolecularView {
   }
   fit(preserveDirection=false) {
     const direction=this.camera.position.clone().sub(this.controls.target).normalize(),up=this.camera.up.clone();
-    if(!this.camera.isOrthographicCamera)super.fit();
-    else {
     const c=this.centroid();let r=this.model.atoms.length?1:3;
-    for(const a of this.model.atoms)r=Math.max(r,new THREE.Vector3(a.x,a.y,a.z).distanceTo(c)+this.radius(a));
+    for(const a of this.model.atoms)r=Math.max(r,new THREE.Vector3(a.x,a.y,a.z).distanceTo(c)+Math.max(this.radius(a),this.figureAddons?.vdw?(vdWR[a.el]||0):0));
+    if(!this.camera.isOrthographicCamera){
+      const distance=r/Math.sin(THREE.MathUtils.degToRad(this.camera.fov/2))*1.15/Math.min(1,this.camera.aspect);
+      this.camera.position.copy(c).addScaledVector(new THREE.Vector3(.1,.16,1).normalize(),distance);
+      this.camera.up.set(0,1,0);this.controls.target.copy(c);this.camera.lookAt(c);this.controls.update();
+    } else {
     const aspect=Math.max(1,this.host.clientWidth)/Math.max(1,this.host.clientHeight), half=r*1.15/Math.min(1,aspect);
     Object.assign(this.camera,{left:-half*aspect,right:half*aspect,top:half,bottom:-half,zoom:1});
     this.camera.position.copy(c).add(new THREE.Vector3(0,0,Math.max(16,r*4)));
@@ -325,7 +367,17 @@ export class StudioView extends MolecularView {
     }
   }
   syncModel(model, options={}) {
+    if(options.full!==false || this.bondNeighbors?.length!==model.atoms.length) {
+      this.bondNeighbors=Array.from({length:model.atoms.length},()=>[]);
+      for(const bond of model.bonds) {
+        this.bondNeighbors[bond.a].push(bond.b);
+        this.bondNeighbors[bond.b].push(bond.a);
+      }
+      for(const neighbors of this.bondNeighbors)
+        neighbors.sort((a,b)=>(model.atoms[a].el==='H')-(model.atoms[b].el==='H'));
+    }
     super.syncModel(model,options);
+    this.updateFigureAddons();
     if(!this.outlineMeshes)return;
     if(options.full!==false) {
       for(const m of this.outlineMeshes){this.scene.remove(m);m.material.dispose();m.dispose();}

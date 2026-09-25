@@ -22,8 +22,11 @@ async function flattened(source,job) {
   source.updateMatrixWorld(true);
   for(let i=0;i<count;i++) {
     if(i%24===0){checkCancelled(job);await nextFrame();}
-    if(source.isInstancedMesh){source.getMatrixAt(ids[i],matrix);matrix.premultiply(source.matrixWorld);source.getColorAt(ids[i],color);}
-    else {matrix.copy(source.matrixWorld);color.copy(source.material.color);}
+    color.copy(source.material.color);
+    if(source.isInstancedMesh){
+      source.getMatrixAt(ids[i],matrix);matrix.premultiply(source.matrixWorld);
+      if(source.instanceColor){const tint=new THREE.Color();source.getColorAt(ids[i],tint);color.multiply(tint);}
+    } else matrix.copy(source.matrixWorld);
     normal.getNormalMatrix(matrix);
     for(let j=0;j<vertices;j++) {
       const offset=(i*vertices+j)*3;
@@ -49,7 +52,11 @@ export class RayTraceExport {
     this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;
     this.renderer.setClearColor(0,0);
     this.scene=new THREE.Scene();
-    this.scene.background=transparent?null:(view.scene.background?.clone()||null);
+    // Composite the display background in 2D. The tracer's constant-white
+    // background texture can remain uninitialized, and tone mapping should not
+    // alter the requested figure background.
+    this.background=transparent?null:(view.scene.background?.clone()||null);
+    this.scene.background=null;
     this.environment=new GradientEquirectTexture(128);
     this.environment.topColor.setRGB(1.5,1.5,1.5);this.environment.bottomColor.setRGB(.5,.55,.6);this.environment.update();
     this.scene.environment=this.environment;
@@ -81,8 +88,10 @@ export class RayTraceExport {
   }
   async capture(samples=64,progress=()=>{}) {
     checkCancelled(this.job);progress(0,'Preparing ray-traced scene');
-    const sources=[this.view.atomMesh,this.view.bondMesh,this.view.arrowMesh];
-    this.view.scene.traverseVisible(o=>{if(o.isMesh&&!o.isInstancedMesh&&!this.view.overlays.getObjectById(o.id))sources.push(o);});
+    const sources=[];
+    this.view.scene.traverseVisible(o=>{
+      if(o.isMesh&&!this.view.outlineMeshes?.includes(o)&&!this.view.overlays.getObjectById(o.id))sources.push(o);
+    });
     for(const m of this.meshes){this.scene.remove(m);m.geometry.dispose();m.material.dispose();}
     this.meshes=[];
     for(const source of sources.filter(s=>s?.visible&&(s.count??1)>0)) {
@@ -105,7 +114,9 @@ export class RayTraceExport {
     // Copy immediately after rendering; no preserveDrawingBuffer and no timing-dependent readback.
     this.tracer.renderSample();
     const canvas=document.createElement('canvas');canvas.width=this.width;canvas.height=this.height;
-    const ctx=canvas.getContext('2d');ctx.drawImage(this.renderer.domElement,0,0);
+    const ctx=canvas.getContext('2d');
+    if(this.background){ctx.fillStyle=this.background.getStyle();ctx.fillRect(0,0,this.width,this.height);}
+    ctx.drawImage(this.renderer.domElement,0,0);
     this.view.applyFogToImage(canvas,this.camera);
     for(const sprite of this.view.labels.children)if(sprite.visible) {
       const p=sprite.position.clone().project(this.camera),up=new THREE.Vector3(0,sprite.scale.y/2,0).applyQuaternion(this.camera.quaternion);

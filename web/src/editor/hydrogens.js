@@ -8,7 +8,7 @@ export function removeAtoms(model, ids) {
   model.bonds=model.bonds.filter(b=>map.has(b.a)&&map.has(b.b)).map(b=>({...b,a:map.get(b.a),b:map.get(b.b)}));
   return map;
 }
-function hydrogenDirections(model,i,others,count) {
+export function hydrogenDirections(model,i,others,count) {
   const a=model.atoms[i],p=point(a),axes=others.map(j=>point(model.atoms[j]).sub(p).normalize());
   const orders=model.bonds.filter(b=>!b.kind&&(b.a===i||b.b===i)).map(b=>b.order);
   const linear=orders.includes(3)||orders.filter(o=>o===2).length===2;
@@ -18,7 +18,18 @@ function hydrogenDirections(model,i,others,count) {
     return [[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]].map(v=>new Vector3(...v).normalize());
   }
   if(axes.length===1) {
-    const axis=axes[0],u=new Vector3(Math.abs(axis.y)<0.9?0:1,Math.abs(axis.y)<0.9?1:0,0).cross(axis).normalize(),v=axis.clone().cross(u);
+    const axis=axes[0],u=new Vector3(Math.abs(axis.y)<0.9?0:1,Math.abs(axis.y)<0.9?1:0,0).cross(axis).normalize();
+    if(planar&&!linear) {
+      // Use the other end of a double bond to retain its substituent plane.
+      for(const b of model.bonds.filter(b=>!b.kind&&(b.a===others[0]||b.b===others[0]))) {
+        const j=b.a===others[0]?b.b:b.a;
+        if(j===i)continue;
+        const tangent=point(model.atoms[j]).sub(point(model.atoms[others[0]]));
+        tangent.addScaledVector(axis,-tangent.dot(axis));
+        if(tangent.lengthSq()>1e-8){u.copy(tangent).normalize();break;}
+      }
+    }
+    const v=axis.clone().cross(u);
     const cos=linear ? -1 : planar ? -.5 : a.el==='O' ? Math.cos(104.5*Math.PI/180) : -1/3;
     return Array.from({length:count},(_,k)=>{
       const angle=planar ? k*Math.PI : k*2*Math.PI/3;

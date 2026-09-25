@@ -33,6 +33,7 @@ export class MolecularView {
     light.position.set(5, 8, 6);
     this.scene.add(light);
     this.sphereGeometry = new THREE.SphereGeometry(1, 48, 32);
+    this.largeSphereGeometry = new THREE.SphereGeometry(1, 24, 16);
     this.cylinderGeometry = new THREE.CylinderGeometry(1, 1, 1, 20);
     this.coneGeometry = new THREE.ConeGeometry(1, 1, 24);
     this.style = {
@@ -138,7 +139,7 @@ export class MolecularView {
           mesh.dispose();
         }
       this.atomMesh = new THREE.InstancedMesh(
-        this.sphereGeometry,
+        model.atoms.length > 250 ? this.largeSphereGeometry : this.sphereGeometry,
         this.material(),
         model.atoms.length,
       );
@@ -461,12 +462,13 @@ export class MolecularView {
       if (o.isInstancedMesh) o.dispose();
       if (
         o.geometry &&
-        o.geometry !== this.sphereGeometry &&
+        o.geometry !== this.sphereGeometry && o.geometry !== this.largeSphereGeometry &&
         o.geometry !== this.cylinderGeometry && o.geometry !== this.coneGeometry
       )
         o.geometry.dispose();
     });
     this.sphereGeometry.dispose();
+    this.largeSphereGeometry.dispose();
     this.cylinderGeometry.dispose();
     this.coneGeometry.dispose();
     this.environment.dispose();

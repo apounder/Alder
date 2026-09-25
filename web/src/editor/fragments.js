@@ -1,7 +1,7 @@
 import { Matrix4, Quaternion, Vector3 } from 'three';
-import { idealLength, validateModel, vdWR } from '../chemistry.js';
+import { idealLength, maxValence, validateModel, vdWR } from '../chemistry.js';
 import { point, neighbors } from './placement.js';
-import { adjustHydrogens, removeAtoms } from './hydrogens.js';
+import { adjustHydrogens, hydrogenDirections, removeAtoms } from './hydrogens.js';
 
 function frame(x, y) {
   x=x.clone().normalize();
@@ -14,19 +14,41 @@ function frame(x, y) {
 const sum = vectors => vectors.reduce((a,b)=>a.add(b),new Vector3());
 const bondOrder = (model,a,b) => model.bonds.find(bond=>(bond.a===a&&bond.b===b)||(bond.a===b&&bond.b===a))?.order || 1;
 
+const orderValue = b => b.kind ? 0 : b.order===4 ? 1.5 : b.order;
+const caps = (model,i) => neighbors(model,i).filter(j=>model.atoms[j].el==='H'&&neighbors(model,j).length===1&&bondOrder(model,i,j)===1);
+const valence = (model,i) => model.bonds.filter(b=>b.a===i||b.b===i).reduce((n,b)=>n+orderValue(b),0);
+function junctionLimit(model,i) {
+  const a=model.atoms[i],existing=valence(model,i)+(a.radical||0);
+  // Preserve explicitly charged/hypervalent templates without inventing charges.
+  return a.charge ? existing : Math.max(maxValence[a.el]||existing,existing);
+}
+function joiningDirection(model,i) {
+  const hs=caps(model,i),p=point(model.atoms[i]);
+  // Prepared fragments already carry their local geometry, including conjugation.
+  if(hs.length)return point(model.atoms[hs.at(-1)]).sub(p).normalize();
+  const heavy=neighbors(model,i).filter(j=>model.atoms[j].el!=='H');
+  return hydrogenDirections(model,i,heavy,1)[0];
+}
+function trimJunction(model,atom,limit) {
+  const i=model.atoms.indexOf(atom),hs=caps(model,i),occupied=valence(model,i)-hs.length;
+  if(occupied>limit+1e-6)throw Error(`${atom.el}${i+1} has no room for these bonds. Choose a joining atom with a replaceable hydrogen or open valence.`);
+  const keep=Math.max(0,Math.floor(limit-occupied));
+  removeAtoms(model,hs.slice(keep));
+}
+
 // Pure planning: preview and commit use exactly the same assembly, with no mutation
 // until the complete candidate has valid coordinates and connectivity.
-export function planFragment(model, fragment, {root=0,anchor=null,mode='replace',position=null,hydrogens=true}={}) {
+export function planFragment(model, fragment, {root=fragment.root??0,anchor=null,mode='replace',position=null,hydrogens=true}={}) {
   fragment=fragment.model || fragment;
   if(!fragment.atoms[root]||fragment.atoms[root].el==='H')throw Error('Choose a heavy atom as the fragment joining atom.');
   if(anchor!==null&&!model.atoms[anchor])throw Error('Select an atom to place this fragment.');
   if(!['replace','attach'].includes(mode))throw Error('Choose Replace atom or Attach by bond.');
   const source=point(fragment.atoms[root]);
   const inside=neighbors(fragment,root).filter(i=>fragment.atoms[i].el!=='H').map(i=>point(fragment.atoms[i]).sub(source).normalize());
-  const sourceFrame=frame(sum(inside),inside.length>1?inside[0].clone().sub(inside[1]):new Vector3(0,0,1));
+  let sourceFrame=frame(sum(inside),inside.length>1?inside[0].clone().sub(inside[1]):new Vector3(0,0,1));
   const candidate=structuredClone(model),retained=new Set(candidate.atoms);
   let parent=null,removeH=null,origin,axis=new Vector3(1,0,0),orientation=new Quaternion(),spiro=false;
-  const oldHydrogens=anchor!==null&&mode==='replace'&&hydrogens?neighbors(model,anchor).filter(i=>model.atoms[i].el==='H'&&neighbors(model,i).length===1):[];
+  const oldHydrogens=anchor!==null&&mode==='replace'?caps(model,anchor):[];
   if(anchor===null) {
     origin=position?.clone() || new Vector3(model.atoms.length?Math.max(...model.atoms.map(a=>a.x))+4:0,0,0);
   } else {
@@ -37,7 +59,7 @@ export function planFragment(model, fragment, {root=0,anchor=null,mode='replace'
       if(old.el==='H'&&ns.length===1){removeH=anchor;parent=ns[0];}
       else removeH=ns.find(i=>model.atoms[i].el==='H'&&neighbors(model,i).length===1&&bondOrder(model,anchor,i)===1)??null;
       const p=point(model.atoms[parent]);
-      axis=removeH!==null?point(model.atoms[removeH]).sub(p):sum(neighbors(model,parent).map(i=>point(model.atoms[i]).sub(p).normalize())).negate();
+      axis=removeH!==null?point(model.atoms[removeH]).sub(p):joiningDirection(model,parent);
       if(axis.lengthSq()<1e-8)axis.set(1,0,0);
       axis.normalize();origin=p.addScaledVector(axis,idealLength(model.atoms[parent].el,fragment.atoms[root].el));
     } else {
@@ -49,6 +71,12 @@ export function planFragment(model, fragment, {root=0,anchor=null,mode='replace'
       axis.normalize();
       if(old.el==='H'&&ns.length===1)origin=point(model.atoms[ns[0]]).addScaledVector(axis,idealLength(model.atoms[ns[0]].el,fragment.atoms[root].el,bondOrder(model,anchor,ns[0])));
       spiro=outside.length===2&&inside.length===2;
+    }
+    const externalNeighbors=mode==='attach'?[parent]:heavy;
+    if(externalNeighbors.length===1) {
+      // Map the departing H/open valence toward the retained atom, not the
+      // existing heavy bond away from it (which made vinyl/alkyl groups linear).
+      sourceFrame=frame(joiningDirection(fragment,root).negate(),inside[0]||new Vector3(0,0,1));
     }
     // Two retained bonds and two ring bonds occupy perpendicular local planes.
     const outside=heavy.map(i=>point(model.atoms[i]).sub(point(old)).normalize());
@@ -71,7 +99,7 @@ export function planFragment(model, fragment, {root=0,anchor=null,mode='replace'
   }
   const rootAtom=best[root],map=new Map();
   if(anchor!==null&&rootAtom.radical) {
-    const external=mode==='attach'?1:model.bonds.filter(b=>b.a===anchor||b.b===anchor).filter(b=>!oldHydrogens.includes(b.a===anchor?b.b:b.a)).reduce((n,b)=>n+b.order,0);
+    const external=mode==='attach'?1:model.bonds.filter(b=>b.a===anchor||b.b===anchor).filter(b=>!oldHydrogens.includes(b.a===anchor?b.b:b.a)).reduce((n,b)=>n+orderValue(b),0);
     rootAtom.radical=Math.max(0,rootAtom.radical-external);if(!rootAtom.radical)delete rootAtom.radical;
   }
   if(anchor!==null&&mode==='replace'){candidate.atoms[anchor]=rootAtom;map.set(root,anchor);}
@@ -80,6 +108,11 @@ export function planFragment(model, fragment, {root=0,anchor=null,mode='replace'
   if(parent!==null)candidate.bonds.push({a:parent,b:map.get(root),order:1});
   const parentAtom=parent===null?null:candidate.atoms[parent];
   removeAtoms(candidate,[...oldHydrogens,...(removeH===null?[]:[removeH])]);
+  trimJunction(candidate,rootAtom,junctionLimit(fragment,root));
+  if(parentAtom) {
+    trimJunction(candidate,parentAtom,junctionLimit(model,parent));
+    if(parentAtom.radical) {parentAtom.radical--;if(!parentAtom.radical)delete parentAtom.radical;}
+  }
   // Joining caps must leave on both sides of the bond, even when automatic
   // hydrogen filling is off. In that mode only trim the junctions, never fill
   // open valences elsewhere in the fragment or the existing structure.

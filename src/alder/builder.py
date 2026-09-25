@@ -197,7 +197,7 @@ class BuilderMixin(SketchMixin):
         self.builder_place_fragment.clicked.connect(lambda: self.choose_fragment('separate'))
         row.addWidget(self.builder_place_fragment)
         fragment_side.addLayout(row)
-        fragment_side.addWidget(label('Click a numbered atom in the preview to choose the junction. Replace a saturated ring atom with another saturated ring to make a spiro junction.', 'muted'))
+        fragment_side.addWidget(label('Pick any numbered atom as the junction. Attach adds a bond and replaces hydrogens as needed. Replace shares the junction atom (for example, to make a spiro ring).', 'muted'))
         side.addWidget(self.builder_fragment_options)
         self.builder_fragment_changed(arm=False)
         side.addWidget(label("Selected atoms", "sectionTitle"))
@@ -418,6 +418,7 @@ class BuilderMixin(SketchMixin):
         self.builder_command(type="style", style=self.style.currentText())
         self.builder_command(type="fog", **self.fog_options())
         self.builder_command(type="appearance", preset=self.preset.currentText(), outline=self.outlines.isChecked(), ao=self.ambient_occlusion.isChecked(), orthographic=self.orthographic.isChecked())
+        self.builder_command(type="figureAddons", **self.figure_addon_options())
         pending, self.builder_pending = self.builder_pending, []
         for payload in pending:
             self.builder_command(**payload)
@@ -518,7 +519,9 @@ class BuilderMixin(SketchMixin):
         model = self.fragment_library[self.builder_fragment.currentIndex()]['model']
         available = model['atoms'][index].get('radical', 0) + sum(b['order'] for b in model['bonds']
             if index in (b['a'], b['b']) and model['atoms'][b['b'] if b['a']==index else b['a']]['el']=='H')
-        self.builder_fragment_caption.setText(f'Green junction · room for {available} external single bond' + ('' if available==1 else 's') + '.')
+        self.builder_fragment_caption.setText(
+            f'Green junction · {available} replaceable H / open valence' + ('' if available==1 else 's') + '.'
+            if available else 'This atom has no replaceable H or open valence. Choose another joining atom to attach.')
         if arm:self.choose_fragment()
 
     def choose_fragment(self, action='choose'):

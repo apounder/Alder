@@ -117,4 +117,21 @@ try:
             wait(w.builder_redo.isEnabled)
             w.builder_redo.click();wait(lambda:json.dumps(w.builder_model,sort_keys=True)==after)
     print('PASS real C–H clicks: methyl, aromatic and both ester junctions, automatic H on/off, rendered atom counts, exact undo/redo',flush=True)
+    w.builder_hydrogens.setChecked(False)
+    w.builder_fragment_mode.setCurrentIndex(1)
+    for name,root,expected in [('Vinyl',1,'C=CC'),('Pyrrole',3,'Cn1cccc1'),('Propyl',1,'CC(C)C')]:
+        place('Methyl');choose(name)
+        preview=w.builder_fragment_preview;rect=preview.drawing_rect();px,py=preview.points[root]
+        QTest.mouseClick(preview,Qt.MouseButton.LeftButton,Qt.KeyboardModifier.NoModifier,QPoint(round(rect.x()+px*rect.width()/320),round(rect.y()+py*rect.height()/160)))
+        wait(lambda:w.builder_state.get('fragmentRoot')==root)
+        index,x,y=target_atom();revision=w.builder_state['revision'];click(index,x,y)
+        wait(lambda:w.builder_state['revision']>revision)
+        molecule=molecule_from_model(w.builder_model);Chem.SanitizeMol(molecule)
+        assert Chem.MolToSmiles(Chem.RemoveHs(molecule))==expected,(name,root)
+        if name=='Vinyl':
+            from rdkit.Chem import rdMolTransforms
+            junction=next(b['b'] if b['a']==index else b['a'] for b in w.builder_model['bonds'] if index in (b['a'],b['b']) and w.builder_model['atoms'][b['b'] if b['a']==index else b['a']]['el']!='H')
+            other=next(a.GetIdx() for a in molecule.GetAtomWithIdx(junction).GetNeighbors() if a.GetIdx()!=index and a.GetSymbol()!='H')
+            assert 115<rdMolTransforms.GetAngleDeg(molecule.GetConformer(),index,junction,other)<125
+    print('PASS non-default preview joining atoms: vinyl geometry, pyrrole nitrogen and branched propyl; RDKit valences',flush=True)
 finally:w.close();app.processEvents()

@@ -9,6 +9,7 @@ let commandQueue=Promise.resolve(),vibration=null,annotationKey=null,comparison=
 const documentAnnotations=new Map();
 let comparisonKey='';
 const sameAtoms=model=>model.atoms.length===viewer.model.atoms.length && model.atoms.every((a,i)=>a.el===viewer.model.atoms[i].el);
+const sameBonds=(a,b)=>a.length===b.length && a.every((bond,i)=>bond.a===b[i].a&&bond.b===b[i].b&&bond.order===b[i].order&&bond.kind===b[i].kind);
 const pairKey=(a,b)=>[Math.min(a,b),Math.max(a,b)].join(':');
 function applyAnnotations(model, edits=annotations) {
   model.bonds=model.bonds.filter(b=>!edits.has(pairKey(b.a,b.b)));
@@ -168,7 +169,7 @@ async function exportFigure(cmd) {
         model.atoms.forEach((a,j)=>{[a.x,a.y,a.z]=points[j];});
         if(video.kind!=='vibration')model.bonds=inferBonds(model.atoms);
         applyAnnotations(model);
-        const same=JSON.stringify(model.bonds)===JSON.stringify(viewer.model.bonds);
+        const same=sameBonds(model.bonds,viewer.model.bonds);
         viewer.syncModel(model,{full:!same,changed:model.atoms.map((_,j)=>j)});
       },
       decorate:canvas=>{
@@ -271,7 +272,7 @@ async function handleCommand(cmd) {
     applyAnnotations(model);
     // Reuse GPU buffers for trajectory frames with unchanged topology.
     const selected=!documentChanged&&sameAtoms(model)?viewer.selection:[];
-    const same=sameAtoms(model) && JSON.stringify(model.bonds)===JSON.stringify(viewer.model.bonds);
+    const same=sameAtoms(model) && sameBonds(model.bonds,viewer.model.bonds);
     viewer.syncModel(model,{full:!same,changed:model.atoms.map((_,i)=>i)});
     viewer.updateOverlays(selected,null);window.sceneState.atoms=model.atoms.length;
     document.getElementById('hint').hidden=!!model.atoms.length;
@@ -287,6 +288,7 @@ async function handleCommand(cmd) {
   else if(cmd.type==='fogPick')viewer.setDepthCuePick(cmd.enabled);
   else if(cmd.type==='style')viewer.setStyle(cmd);
   else if(cmd.type==='appearance')viewer.setAppearance(cmd);
+  else if(cmd.type==='figureAddons')viewer.setFigureAddons(cmd);
   else if(cmd.type==='fit')viewer.fit();
   else if(cmd.type==='visibility')viewer.setActive(cmd.visible);
   else if(cmd.type==='export')await exportFigure(cmd);

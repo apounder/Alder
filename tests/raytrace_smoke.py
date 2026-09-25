@@ -103,6 +103,9 @@ try:
     w.export_size.setValue(192)
     w.ray_samples.setValue(4)
     w.transparent.setChecked(True)
+    w.fog_enabled.setChecked(True)
+    w.fog_strength.setValue(35)
+    w.fog_depth.setValue(0)
     with tempfile.TemporaryDirectory() as directory:
         directory = Path(directory)
         image_path = directory/'ray.png'
@@ -112,6 +115,10 @@ try:
             assert max(image.size) == 192
             assert image.getchannel('A').getextrema() == (0, 255)
             assert image.getpixel((0, 0))[3] == 0
+            pixels = np.asarray(image.convert('RGBA')).astype(int)
+            solid = pixels[:, :, 3] > 240
+            assert np.count_nonzero(solid & (pixels[:, :, 0] > pixels[:, :, 1] + 40)) > 15, 'Fog washed out oxygen colors'
+            assert np.count_nonzero(solid & (pixels[:, :, 2] > pixels[:, :, 0] + 40)) > 15, 'Fog washed out nitrogen colors'
         assert snapshot() == before
         print('PASS: shared dative arrows, TS dashes, trajectory persistence, actual ray tracing and transparent PNG.', flush=True)
         w.video_size.addItem('96 px', 96)

@@ -6,6 +6,7 @@ import json
 from io import BytesIO
 from pathlib import Path
 import sys
+import time
 
 import numpy as np
 from PIL import Image
@@ -101,6 +102,9 @@ class Window(ComparisonMixin, ExportMixin, ResultsMixin, BuilderMixin, QMainWind
         self.cube_step = None
         self.display_coords = None
         self.step = 0
+        self._plot_owner = None
+        self._plot_options = None
+        self._playback_fraction = 0.0
         self.vibration_preview = False
         self.init_builder()
         self.measurement_states = {}
@@ -354,7 +358,7 @@ class Window(ComparisonMixin, ExportMixin, ResultsMixin, BuilderMixin, QMainWind
 
     def send(self, **payload):
         kind = payload.get("type")
-        if kind in {"style", "appearance", "fog"} and hasattr(self, "builder_bridge"):
+        if kind in {"style", "appearance", "fog", "figureAddons"} and hasattr(self, "builder_bridge"):
             self.builder_command(**payload)
         if kind in {"fit", "annotation", "fogPick", "measure", "exportCancel"} and self.builder_active:
             self.builder_command(**payload)
@@ -377,6 +381,7 @@ class Window(ComparisonMixin, ExportMixin, ResultsMixin, BuilderMixin, QMainWind
         self.send(type="style", style=self.style.currentText())
         self.send(type="fog", **self.fog_options())
         self.appearance_changed()
+        self.figure_addons_changed()
         if self.cube:
             self.refresh_surface(reload=True)
         if self.calculation:
@@ -508,16 +513,31 @@ class Window(ComparisonMixin, ExportMixin, ResultsMixin, BuilderMixin, QMainWind
         preset = self.preset.currentText()
         if preset != getattr(self, "last_preset", None):
             self.last_preset = preset
-            for control, value in ((self.outlines, preset != "Soft studio"),
+            for control, value in ((self.outlines, preset not in {"Soft studio", "Tube", "Wire", "vdW"}),
                                    (self.ambient_occlusion, preset == "Soft studio"),
                                    (self.orthographic, preset != "Paton-inspired")):
                 control.blockSignals(True)
                 control.setChecked(value)
                 control.blockSignals(False)
+            self.style.setCurrentText({"Tube": "Stick", "Wire": "Stick", "vdW": "Space filling"}.get(preset, "Ball and stick"))
         self.preset_note.setText("Based on Robert Paton's published styling: thin black bonds, pale carbon, smaller hydrogen spheres. WebGL approximation of the PyMOL look."
                                 if preset == "Paton-inspired" else "Clean molecular graphics with adjustable outlines, depth shading, and projection.")
+        if preset in {"Flat", "Tube", "Ball and tube", "Wire", "vdW"}:
+            self.preset_note.setText("Inspired by xyzrender: " + {
+                "Flat": "unshaded colors and fine outlines.", "Tube": "thick element-colored sticks.",
+                "Ball and tube": "rounded atoms and element-colored bonds.",
+                "Wire": "thin element-colored sticks.", "vdW": "space-filling van der Waals spheres.",
+            }[preset])
         self.send(type="appearance", preset=preset, outline=self.outlines.isChecked(),
                   ao=self.ambient_occlusion.isChecked(), orthographic=self.orthographic.isChecked())
+
+    def figure_addon_options(self):
+        return dict(nci=self.auto_contacts.isChecked(), vdw=self.vdw_overlay.isChecked(),
+                    opacity=self.vdw_opacity.value()/100)
+
+    def figure_addons_changed(self, *_):
+        self.vdw_opacity.setEnabled(self.vdw_overlay.isChecked())
+        self.send(type="figureAddons", **self.figure_addon_options())
 
     def select_step(self, step, fit=False):
         self.stop_vibration(restore=False)
@@ -551,19 +571,24 @@ class Window(ComparisonMixin, ExportMixin, ResultsMixin, BuilderMixin, QMainWind
         self.table.selectRow(step)
         if hasattr(self, 'path_panel'):
             self.path_panel.select_step(step)
-        self.draw_plot()
+        self.update_plot_selection()
 
     def plot_values(self):
         if not self.calculation:
             return np.array([])
+        options = (self.reference.currentIndex(), self.units.currentText())
+        if self._plot_owner is self.calculation and self._plot_options == options:
+            return self._plot_values
         values = self.calculation.energies.copy()
         finite = values[np.isfinite(values)]
         if len(finite):
-            if self.reference.currentIndex() == 0:
+            if options[0] == 0:
                 values -= np.min(finite)
-            elif self.reference.currentIndex() == 1:
+            elif options[0] == 1:
                 values -= finite[0]
-        return values * UNITS[self.units.currentText()]
+        self._plot_values = values * UNITS[options[1]]
+        self._plot_owner, self._plot_options = self.calculation, options
+        return self._plot_values
 
     def update_energy_view(self, *_):
         if not self.calculation:
@@ -578,6 +603,7 @@ class Window(ComparisonMixin, ExportMixin, ResultsMixin, BuilderMixin, QMainWind
                                          f"{relative:.6f}" if np.isfinite(relative) else "—")):
                 self.table.setItem(row, col, QTableWidgetItem(value))
         self.select_step(min(self.step, len(values) - 1))
+        self.draw_plot()
 
     def draw_plot(self):
         self.ax.clear()
@@ -589,15 +615,29 @@ class Window(ComparisonMixin, ExportMixin, ResultsMixin, BuilderMixin, QMainWind
         self.ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         self.ax.set_ylabel(f"{'E' if self.reference.currentIndex() == 2 else 'ΔE'} ({self.units.currentText()})", color="#627986", fontsize=9)
         values = self.plot_values()
+        self._plot_cursor = self._plot_marker = None
         if len(values) and np.isfinite(values).any():
             self.ax.plot(np.arange(1, len(values) + 1), values, "o-", color="#178b91", markersize=4, linewidth=1.5)
-            self.ax.axvline(self.step + 1, color="#9ab4bd", linewidth=1)
-            if self.step < len(values) and np.isfinite(values[self.step]):
-                self.ax.plot(self.step + 1, values[self.step], "o", color="#dd7754", markersize=8)
+            self._plot_cursor = self.ax.axvline(self.step + 1, color="#9ab4bd", linewidth=1)
+            self._plot_marker, = self.ax.plot([], [], "o", color="#dd7754", markersize=8)
+            self.update_plot_selection()
         else:
             self.ax.text(0.5, 0.5, "An energy profile will appear here", ha="center", va="center",
                          transform=self.ax.transAxes, color="#83949d")
         self.canvas.draw_idle()
+
+    def update_plot_selection(self):
+        if self._plot_cursor is None or not self.calculation:
+            return
+        x = self.step + 1
+        self._plot_cursor.set_xdata([x, x])
+        value = self.plot_values()[self.step]
+        if np.isfinite(value):
+            self._plot_marker.set_data([x], [value])
+        else:
+            self._plot_marker.set_data([], [])
+        if self.results.isVisible() and self.results.currentIndex() == 0:
+            self.canvas.draw_idle()
 
     def plot_clicked(self, event):
         if self.calculation and event.inaxes == self.ax and event.xdata is not None:
@@ -606,19 +646,28 @@ class Window(ComparisonMixin, ExportMixin, ResultsMixin, BuilderMixin, QMainWind
     def toggle_play(self, checked):
         if checked:
             self.stop_vibration()
+            self._playback_time = time.monotonic()
+            self._playback_fraction = 0.0
         self.play.setText("Pause" if checked else "Play")
         self.timer.start() if checked else self.timer.stop()
 
     def advance(self):
         if self.calculation:
+            frames = 1
+            if self.timer.isActive():
+                now = time.monotonic()
+                self._playback_fraction += (now - self._playback_time) * self.trajectory_speed.value() / 0.350
+                self._playback_time = now
+                frames = max(1, int(self._playback_fraction))
+                self._playback_fraction = max(0, self._playback_fraction - frames)
             path = self.calculation.reaction_path
             if path is not None and self.results.currentIndex() == self.path_tab:
                 steps = path.steps[path.steps >= 0]
                 if len(steps):
                     current = np.flatnonzero(steps == self.step)
-                    self.slider.setValue(int(steps[(int(current[0])+1) % len(steps)] if len(current) else steps[0]))
+                    self.slider.setValue(int(steps[(int(current[0])+frames) % len(steps)] if len(current) else steps[0]))
                 return
-            self.slider.setValue((self.step + 1) % len(self.calculation.coords))
+            self.slider.setValue((self.step + frames) % len(self.calculation.coords))
 
     def export_image(self):
         if self.builder_editing and self.builder_mode == '2d':

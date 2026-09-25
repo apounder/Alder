@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 import tempfile
 import time
+from unittest.mock import patch
 
 import numpy as np
 from PySide6.QtCore import QMimeData, QPoint, QPointF, Qt, QUrl
@@ -62,13 +63,32 @@ window.show()
 try:
     wait_for(lambda: window.renderer_ready or errors)
     assert window.renderer_ready, errors
+    assert window.trajectory_speed.value() == 10 and window.timer.interval() == 35
+    viewer_height = window.web.height()
+    window.results_toggle.click()
+    app.processEvents()
+    assert not window.results.isVisible() and window.web.height() > viewer_height
+    window.results_toggle.click()
+    app.processEvents()
+    assert window.results.isVisible()
     data = Path(__file__).parent / "data"
     drop(data / "gaussian-opt.log")
     wait_for(lambda: state()["atoms"] == 20)
     assert window.step == 4
+    assert javascript("calculationApp.view.atomMesh.geometry.parameters.widthSegments") == 48
     window.slider.setValue(0)
     assert window.step == 0
     assert "382.294279" in window.energy_label.text()
+    window.trajectory_speed.setValue(40)
+    assert window.timer.interval() == 16
+    with patch("alder.app.time.monotonic", return_value=100.0):
+        window.play.setChecked(True)
+    with patch("alder.app.time.monotonic", return_value=100.036):
+        window.advance()
+    assert window.step == 4
+    window.play.setChecked(False)
+    window.trajectory_speed.setValue(10)
+    window.slider.setValue(0)
     window.play.setChecked(True)
     wait_for(lambda: window.step != 0)
     window.play.setChecked(False)
@@ -228,6 +248,7 @@ try:
         assert javascript('calculationApp.vdwSurface !== null') is True
         window.clear_cube()
         wait_for(lambda: state()['surfaces'] == 0)
+    assert javascript("(()=>{const view=calculationApp.view;view.syncModel({atoms:Array.from({length:300},(_,i)=>({el:'C',x:(i%20)*3,y:Math.floor(i/20)*3,z:0})),bonds:[]});return view.atomMesh.geometry.parameters.widthSegments})()") == 24
     print("PASS: Gaussian/ORCA, file drop, playback, ESP/NCI/IGM colors, interpolation, NCIPLOT scaling, grid rejection/recovery, Paton style, supersampled transparent PNG/TIFF, and VDW ESP.", flush=True)
 finally:
     window.close()
