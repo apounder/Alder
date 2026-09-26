@@ -4,8 +4,8 @@ Status: experimental packaging; macOS validation is pending. Run both
 architecture jobs and test the downloaded application on a Mac before a
 general release.
 
-For a complete Windows/Mac/Linux release draft, follow
-[Publish desktop downloads](RELEASING.md). The steps below build Mac apps alone.
+For normal installation, use the [Mac terminal walkthrough](../README.md#macos).
+The experimental packaging steps below are separate from the Windows release.
 
 ## Build with GitHub Actions
 
@@ -27,8 +27,8 @@ For a complete Windows/Mac/Linux release draft, follow
    until someone has tried it on a real Mac. The workflow does not publish
    releases automatically or need repository write permissions.
 
-GitHub also runs checks for pull requests. Version tags start the combined
-**Desktop release** workflow, which creates a draft with all platform downloads. Standard hosted
+GitHub also runs checks for pull requests. Version tags start the separate
+**Windows release** workflow; they do not build Mac packages. Standard hosted
 runners are free for public repositories; private repositories use the
 account's Actions allowance and billing settings. Never upload `.venv`,
 `node_modules`, signing credentials, or build output into source control.

@@ -18,7 +18,7 @@ from alder.app import Window, configure_app
 app = QApplication([])
 configure_app(app)
 w = Window()
-w.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen, True)
+# Ray-traced exports advance on animation frames; keep WebEngine exposed.
 w.show()
 errors = []
 commands = []
@@ -192,6 +192,7 @@ try:
         w.transparent.setChecked(True)
         w.export_size.setMinimum(64)
         w.export_size.setValue(192)
+        raster_opaque = None
         for engine in [0, 1]:
             w.export_engine.setCurrentIndex(engine)
             w.ray_samples.setValue(2)
@@ -203,12 +204,17 @@ try:
             pixels = np.asarray(Image.open(path).convert('RGBA'))
             assert pixels[0, 0, 3] == 0 and pixels[:, :, 3].max() == 255
             opaque = pixels[:, :, 3] == 255
-            # At two samples, ray-traced silhouettes can differ slightly from
-            # the antialiased depth pass. Check interior pixels, not coverage edges.
-            interior=opaque.copy()
-            for dy,dx in [(0,1),(0,-1),(1,0),(-1,0),(1,1),(-1,-1),(-1,1),(1,-1)]:
-                interior &= np.roll(opaque,(dy,dx),(0,1))
-            assert interior.any()
+            if engine == 0:
+                raster_opaque = opaque
+            # Jittered rays can all hit an antialiased raster edge at two samples.
+            # Check the common opaque region, inset beyond the one-pixel ray
+            # jitter plus the raster sample footprint; keep the white threshold.
+            common = opaque & raster_opaque
+            interior = common.copy()
+            for dy in range(-2, 3):
+                for dx in range(-2, 3):
+                    interior &= np.roll(common, (dy, dx), (0, 1))
+            assert np.count_nonzero(interior) > 100, 'Not enough fully covered fog pixels'
             assert (pixels[:, :, :3][interior] >= 250).all(), (engine, pixels[:, :, :3][interior].min(axis=0))
             assert bonds(True) == saved and view('model', True) == before
         pump(.4)

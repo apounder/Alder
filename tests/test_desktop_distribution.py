@@ -100,12 +100,12 @@ def test_deb_contains_executable_and_application_menu(tmp_path):
     assert (installed / 'usr/share/icons/hicolor/scalable/apps/alder.svg').is_file()
 
 
-@pytest.mark.parametrize('problem', [None, 'missing', 'corrupt'])
-def test_release_requires_every_platform_and_valid_checksums(tmp_path, problem):
+@pytest.mark.parametrize('problem', [None, 'missing', 'corrupt', 'incomplete'])
+def test_release_requires_windows_downloads_and_valid_checksums(tmp_path, problem):
     source = tmp_path / 'downloads'
     source.mkdir()
     names = [f'Alder-0.4.0-{suffix}' for suffix in ('Windows-x64-GUI-Setup.exe',
-        'macOS-AppleSilicon.dmg', 'macOS-Intel.dmg', 'Linux-x64.deb', 'Linux-arm64.deb')]
+        'Windows-x64-GUI-Portable.zip')]
     digest = hashlib.sha256(b'fixture').hexdigest()
     for name in names:
         (source / name).write_bytes(b'fixture')
@@ -114,6 +114,8 @@ def test_release_requires_every_platform_and_valid_checksums(tmp_path, problem):
         (source / names[-1]).unlink()
     if problem == 'corrupt':
         (source / names[0]).write_bytes(b'changed after validation')
+    if problem == 'incomplete':
+        (source / 'SHA256SUMS.txt').write_text(f'{digest}  {names[0]}\n')
     output = tmp_path / 'release'
     if problem:
         with pytest.raises(ValueError):
@@ -121,4 +123,4 @@ def test_release_requires_every_platform_and_valid_checksums(tmp_path, problem):
         assert not output.exists()
     else:
         assert sorted(collect(source, output, '0.4.0')) == sorted(names)
-        assert len(list(output.iterdir())) == 6
+        assert len(list(output.iterdir())) == 3

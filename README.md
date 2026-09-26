@@ -10,25 +10,22 @@ making figures. Your structures and calculation files stay on your computer.
 
 ## Desktop downloads
 
-The desktop packages include Python and the graphical setup wizard. Download
-one for your computer from [GitHub Releases](https://github.com/apounder/alder/releases),
-then open it using the steps below. **A local build is not a public download:**
-if Releases has no matching file yet, use [source installation](#installation).
-The [maintainer release guide](packaging/RELEASING.md) explains how to publish all platforms.
+Windows users can install Alder with **Setup.exe**, which includes Python and
+the graphical setup wizard. For Mac and Linux, use the [macOS](#macos) or
+[Linux](#linux) terminal installation instructions to open the same GUI.
 
-| Computer | File under release Assets | Initial installation | Open again later |
-| --- | --- | --- | --- |
-| Windows x64 | `Windows-x64-GUI-Setup.exe` | Open Setup and follow the installer. | **Alder** in Start, or the optional desktop shortcut. |
-| Mac with Apple Silicon | `macOS-AppleSilicon.dmg` | Open the DMG and drag **Alder** to **Applications**. | **Alder** in Applications; you can keep it in the Dock. |
-| Intel Mac | `macOS-Intel.dmg` | Open the DMG and drag **Alder** to **Applications**. | **Alder** in Applications. |
-| Ubuntu 24.04 or compatible newer Linux, Intel/AMD | `Linux-x64.deb` | Open with your graphical package installer. | **Alder** in the applications menu. |
-| Ubuntu 24.04 or compatible newer Linux, ARM64 | `Linux-arm64.deb` | Open with your graphical package installer. | **Alder** in the applications menu. |
+1. Open [GitHub Releases](https://github.com/apounder/alder/releases).
+2. Under **Assets**, download `Alder-<version>-Windows-x64-GUI-Setup.exe`.
+3. Open the file and follow the installation and model setup windows.
+4. Later, open **Alder** from Start or its optional desktop shortcut.
 
-Windows uses `.exe`; Mac and Linux use their own native app/package formats.
-No terminal, Python, Git, or Conda is needed for normal use of these packages.
-Windows portable ZIPs and Linux `.tar.gz` archives are alternatives: extract the
-complete folder and open `Alder.exe` or `Alder`, keeping `_internal` beside it.
-Linux portable builds still need [Qt's system libraries](packaging/LINUX.md).
+No separate Python, Git, Conda, or terminal is needed for the Windows installer.
+The portable ZIP is an alternative: extract the complete folder and open
+`Alder.exe`, keeping `_internal` beside it.
+
+If no installer is published yet, use [source installation](#installation).
+Maintainers can follow the [Windows release guide](packaging/RELEASING.md) to
+build and publish it from GitHub. Mac and Linux builds do not block this release.
 
 **First launch:** the **Set up Alder** window lets you choose optional MLIP models
 and CPU/NVIDIA hardware. Uncheck every model for the viewer only, or select models
@@ -38,11 +35,7 @@ internet and disk space. For UMA, follow [Hugging Face access](#get-access-to-um
 **Later launches:** open the same app icon. Installed models are reused. To add,
 repair, or change models, use **Local MLIP → Environment / models → Guided setup**.
 
-Windows builds are unsigned. Mac packages require macOS 15+, are not
-Apple-notarized, and remain experimental until validated on a Mac; see the
-[first-launch instructions](packaging/MACOS.md#signing-and-the-first-launch).
-Mac calculations use CPU. Linux packages target Ubuntu-compatible systems;
-see the [Linux guide](packaging/LINUX.md) for other distributions.
+Windows builds are unsigned.
 
 ## Installation
 
@@ -226,7 +219,7 @@ other distributions need equivalent Python, Git, and Qt runtime packages.
 
    ```sh
    sudo apt update
-   sudo apt install python3 git libegl1 libopengl0 libnss3 libxcb-cursor0 libxkbcommon-x11-0 libasound2t64
+   sudo apt install python3 git libegl1 libopengl0 libnss3 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-image0 libxcb-render-util0 libxcb-shape0 libxcb-randr0 libxcb-sync1 libxcb-xfixes0 libxcb-xkb1 libx11-xcb1 libsm6 libice6 libgl1 libxkbcommon-x11-0 libasound2t64
    ```
 
 2. Download Alder into a new folder and enter it:
@@ -474,8 +467,8 @@ tests in `tests/*_smoke.py` require a graphical session.
 Bundled renderer and editor assets are included. Editing them requires Node.js;
 see [web development](web/README.md). Standalone release instructions are in the
 [Windows](packaging/WINDOWS.md), [macOS](packaging/MACOS.md), and
-[Linux](packaging/LINUX.md) packaging guides. The [desktop release workflow](packaging/RELEASING.md)
-builds all platforms and attaches validated downloads to a GitHub release draft.
+[Linux](packaging/LINUX.md) packaging guides. The [Windows release workflow](packaging/RELEASING.md)
+attaches the tested Windows installer and portable ZIP to a GitHub release draft.
 
 To regenerate the screenshots and figures, run `python scripts/capture_readme.py`
 from an installed source checkout in a graphical desktop session. Captures use

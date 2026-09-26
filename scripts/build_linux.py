@@ -15,7 +15,10 @@ from release_files import write_notices
 
 ROOT = Path(__file__).resolve().parents[1]
 DEPENDENCIES = ('libc6 (>= 2.39), libegl1, libopengl0, libnss3, libnspr4, '
-                'libxcb-cursor0, libxkbcommon-x11-0, libasound2t64, libx11-6, '
+                'libxcb-cursor0, libxcb-icccm4, libxcb-keysyms1, libxcb-image0, '
+                'libxcb-render-util0, libxcb-shape0, libxcb-randr0, libxcb-sync1, '
+                'libxcb-xfixes0, libxcb-xkb1, libx11-xcb1, libsm6, libice6, libgl1, '
+                'libxkbcommon-x11-0, libasound2t64, libx11-6, '
                 'libxcomposite1, libxdamage1, libxrandr2, libxtst6, libxss1, '
                 'libgbm1, libdrm2, libfontconfig1, libglib2.0-0t64, libdbus-1-3')
 

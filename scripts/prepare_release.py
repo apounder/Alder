@@ -1,4 +1,4 @@
-"""Collect only complete, checksum-verified desktop downloads for a GitHub release."""
+"""Collect the complete, checksum-verified Windows downloads for a GitHub release."""
 import hashlib
 from pathlib import Path
 import shutil
@@ -26,8 +26,7 @@ def collect(source, destination, version):
                 if hashlib.file_digest(stream, 'sha256').hexdigest() != digest:
                     raise ValueError(f'Checksum mismatch: {name}')
         assets[name] = matches[0]
-    for suffix in ('Windows-x64-GUI-Setup.exe', 'macOS-AppleSilicon.dmg',
-                   'macOS-Intel.dmg', 'Linux-x64.deb', 'Linux-arm64.deb'):
+    for suffix in ('Windows-x64-GUI-Setup.exe', 'Windows-x64-GUI-Portable.zip'):
         if f'Alder-{version}-{suffix}' not in assets:
             raise ValueError(f'Release is incomplete: missing {suffix}')
     destination.mkdir(parents=True, exist_ok=False)

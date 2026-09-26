@@ -9,7 +9,7 @@ installers are not included in a source clone. To publish the built files,
 attach the installer, ZIP, and checksums to a GitHub Release. To try an existing
 build, download its installer or portable ZIP; rebuilding is unnecessary.
 
-For the complete Windows/Mac/Linux release draft, follow
+For an automatically assembled Windows release draft, follow
 [Publish desktop downloads](RELEASING.md). The steps below build Windows alone.
 
 ## Build with GitHub's website — no local command line
@@ -40,8 +40,8 @@ For the complete Windows/Mac/Linux release draft, follow
 
 Standalone manual builds default to the GUI edition. Pull requests run the GUI
 checks without downloading the large calculation kit. This individual workflow
-uploads artifacts without publishing releases. The **Desktop release** workflow
-also runs on version tags and creates a draft containing all platform downloads.
+uploads artifacts without publishing releases. The **Windows release** workflow
+also runs on version tags and creates a draft containing the Windows installer and portable ZIP.
 Increase `project.version` in `pyproject.toml` for the next release.
 
 In GitHub Desktop, open the repository, commit the changes, and choose

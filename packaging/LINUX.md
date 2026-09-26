@@ -36,7 +36,7 @@ entry; use the `.deb` for that integration.
 Portable builds still need the host's Qt/WebEngine system libraries. On Ubuntu:
 
 ```sh
-sudo apt install libegl1 libopengl0 libnss3 libnspr4 libxcb-cursor0 libxkbcommon-x11-0 libasound2t64 libx11-6 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxss1 libgbm1 libdrm2 libfontconfig1 libglib2.0-0t64 libdbus-1-3
+sudo apt install libegl1 libopengl0 libnss3 libnspr4 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-image0 libxcb-render-util0 libxcb-shape0 libxcb-randr0 libxcb-sync1 libxcb-xfixes0 libxcb-xkb1 libx11-xcb1 libsm6 libice6 libgl1 libxkbcommon-x11-0 libasound2t64 libx11-6 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxss1 libgbm1 libdrm2 libfontconfig1 libglib2.0-0t64 libdbus-1-3
 ```
 
 Install desktop packages as your ordinary user through the system installer;
@@ -46,8 +46,9 @@ Uninstall with your package manager; downloaded models and user data are retaine
 
 ## Build and validate
 
-Use [Desktop release](RELEASING.md) to create all downloads and a GitHub release
-draft. **Actions → Linux download → Run workflow** builds only Linux artifacts.
+For normal installation, use the [Linux terminal walkthrough](../README.md#linux).
+Experimental packages can be built with **Actions → Linux download → Run workflow**.
+These builds are separate from the Windows release.
 Both architectures run the tests, build a relocatable executable, launch it from
 a path with spaces and Unicode, install the `.deb`, verify the menu entry and
 installed executable, and uninstall it. Assets upload only after those checks pass.

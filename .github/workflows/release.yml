@@ -1,4 +1,4 @@
-name: Desktop release
+name: Windows release
 
 on:
   workflow_dispatch:
@@ -17,12 +17,8 @@ jobs:
     uses: ./.github/workflows/windows.yml
     with:
       offline_mlip: false
-  macos:
-    uses: ./.github/workflows/macos.yml
-  linux:
-    uses: ./.github/workflows/linux.yml
   release:
-    needs: [windows, macos, linux]
+    needs: windows
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -32,9 +28,9 @@ jobs:
           fetch-depth: 0
       - uses: actions/download-artifact@v8
         with:
-          pattern: Alder-*
+          name: Alder-Windows-x64-GUI
           path: build/downloads
-      - name: Verify and collect all platform downloads
+      - name: Verify Windows installer and portable download
         run: python3 scripts/prepare_release.py build/downloads build/release
       - name: Create a draft release with the tested installers
         env:

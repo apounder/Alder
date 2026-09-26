@@ -18,7 +18,7 @@ Calculation environments and downloaded models are saved for future launches.
 | Clone with Git | [Windows or Mac terminal walkthrough](#4-git-clone) | Git and Python 3.11 or newer |
 | You already use Anaconda or Miniforge | [Conda](#2-conda) | Conda and an extracted or cloned copy of this repository |
 | Download GitHub's source ZIP | [Source ZIP](#3-source-zip) | Python 3.11 or newer and Git (for a dependency) |
-| Download a desktop app | [Windows, Mac, or Linux download](#1-desktop-download) | A matching release, when available |
+| Download a desktop app | [Windows installer](#1-desktop-download) | A matching release, when available |
 
 For first-time model setup, use an internet connection and allow several GB of
 free disk space per calculator. CUDA packages need additional space. Public
@@ -32,12 +32,12 @@ arbitrary Hugging Face models are not automatically compatible.
 ### 1. Desktop download
 
 The GitHub source tree does not contain `dist`: that folder is ignored local
-build output. The [desktop release workflow](../packaging/RELEASING.md) attaches
+build output. The [Windows release workflow](../packaging/RELEASING.md) attaches
 tested installers to a release draft; a maintainer publishes it for public access.
 Cloning the repository does not download an EXE.
 
 Open [GitHub Releases](https://github.com/apounder/alder/releases) and
-choose the download for your computer. **If no matching release is available,
+choose the Windows installer. **If no matching release is available,
 use the Conda or source instructions below.** A source ZIP is not a desktop installer.
 
 On Windows 10 (1809+) or Windows 11, download the x64 **Setup.exe**, open it,
@@ -59,17 +59,12 @@ of the source. Older downloads may only have the earlier **Set up selected model
 screen. A fresh portable launch also offers the walkthrough. Existing users can
 open **Local MLIP → Environment / models → Guided setup** at any time.
 
-macOS downloads are experimental: choose the matching Apple Silicon or Intel DMG,
-drag **Alder** into **Applications**, and open it. Use CPU for calculations;
-CUDA requires NVIDIA hardware on Windows or Linux. See the
-[macOS guide](../packaging/MACOS.md) for current validation and first-launch details.
-On Ubuntu 24.04 or compatible newer Linux, choose the x64 or ARM64 `.deb`, open
-it with your graphical package installer, and then open **Alder** from the
-applications menu. The first launch offers the same model walkthrough. See the
-[Linux guide](../packaging/LINUX.md) for portable archives, system libraries,
-and other distributions.
+For Mac and Linux, use the [macOS terminal walkthrough](../README.md#macos) or
+[Linux terminal walkthrough](../README.md#linux). These install and launch the
+same GUI. Native Mac/Linux packages remain experimental developer builds and
+are not required for the Windows release.
 
-Windows builds are unsigned; macOS builds are not Apple-notarized.
+Windows builds are unsigned.
 
 ### 2. Conda
 
