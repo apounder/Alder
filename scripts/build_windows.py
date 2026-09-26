@@ -33,6 +33,7 @@ def main():
     env['PATH']=str(Path(os.environ['SystemRoot'])/'System32')
     def smoke(folder,mlip=False):
         report=ROOT/'build'/('offline-desktop-smoke.json' if mlip else 'portable-smoke.json')
+        report.unlink(missing_ok=True)
         options=['--mlip-smoke-test',str(report)] if mlip else ['--smoke-test',str(report),str(ROOT/'tests/data')]
         check_env=env.copy()
         if mlip:check_env.update(UV_OFFLINE='1',HF_HUB_OFFLINE='1',HTTP_PROXY='http://127.0.0.1:9',HTTPS_PROXY='http://127.0.0.1:9')

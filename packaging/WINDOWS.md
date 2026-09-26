@@ -9,6 +9,9 @@ installers are not included in a source clone. To publish the built files,
 attach the installer, ZIP, and checksums to a GitHub Release. To try an existing
 build, download its installer or portable ZIP; rebuilding is unnecessary.
 
+For the complete Windows/Mac/Linux release draft, follow
+[Publish desktop downloads](RELEASING.md). The steps below build Windows alone.
+
 ## Build with GitHub's website — no local command line
 
 1. Put the contents of **alder** at the root of a GitHub repository.
@@ -21,7 +24,7 @@ build, download its installer or portable ZIP; rebuilding is unnecessary.
    its 25 MB per-file limit. GitHub Desktop can commit and push the source
    folder without a terminal. Keep `.github` included even if your file manager
    normally hides folders beginning with a dot.
-2. In the repository, open **Actions → Windows download → Run workflow**. Leave **Build the larger offline CPU edition** enabled to generate both downloads.
+2. In the repository, open **Actions → Windows download → Run workflow**. Select **Build the larger offline CPU edition** only if you also want the large offline download. The default GUI edition offers online MLIP setup.
    The workflow must be on the default branch for this button to appear.
 3. Wait for a green build. It checks the parsers, builds the app, runs the actual
    executable with Python removed from PATH, installs it, checks the installed
@@ -35,8 +38,10 @@ build, download its installer or portable ZIP; rebuilding is unnecessary.
    portable ZIP, and `SHA256SUMS.txt`. Publish when ready. Public release assets
    provide the easy, lasting download for users without a GitHub account.
 
-Manual and version-tag builds produce both editions by default. Pull requests run the GUI checks without downloading the large calculation kit. It does not publish
-releases automatically and does not require repository write permissions.
+Standalone manual builds default to the GUI edition. Pull requests run the GUI
+checks without downloading the large calculation kit. This individual workflow
+uploads artifacts without publishing releases. The **Desktop release** workflow
+also runs on version tags and creates a draft containing all platform downloads.
 Increase `project.version` in `pyproject.toml` for the next release.
 
 In GitHub Desktop, open the repository, commit the changes, and choose

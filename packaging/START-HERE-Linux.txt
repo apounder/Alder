@@ -1,0 +1,25 @@
+Alder for Linux
+
+Use the .deb with your system's graphical package installer on Ubuntu 24.04
+or a compatible newer distribution. Then open Alder from Applications.
+Choose the x64 package for Intel/AMD, or arm64 for ARM Linux.
+
+For the portable .tar.gz, extract the complete Alder folder and open its
+Alder executable in your file manager. Keep _internal beside the executable.
+Some desktops require Properties > Permissions > Allow executing as a program.
+The portable app still needs Qt's system libraries; see packaging/LINUX.md
+in the repository if it cannot start.
+
+First launch opens Set up Alder. Uncheck all models for viewer-only use,
+or select models and CPU/NVIDIA hardware. Internet is needed to download
+optional calculation environments and model weights. UMA requires your own
+approved Hugging Face account and read token; restricted licences remain
+the model owner's requirements. Setup never queues a calculation for you.
+
+Later, open Alder from Applications (installed .deb) or the extracted folder
+(portable). To add or repair models, choose Local MLIP > Environment / models
+> Guided setup. Cached models are reused. Python and a terminal are not
+needed for normal use.
+
+Diagnostics: ~/.local/state/Alder/studio.log (or $XDG_STATE_HOME/Alder/studio.log).
+Your model cache and calculation jobs are separate from the app installation.

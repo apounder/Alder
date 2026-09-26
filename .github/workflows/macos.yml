@@ -2,8 +2,7 @@ name: macOS download
 
 on:
   workflow_dispatch:
-  push:
-    tags: ['v*']
+  workflow_call:
   pull_request:
 
 permissions:

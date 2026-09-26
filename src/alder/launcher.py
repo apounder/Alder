@@ -13,15 +13,25 @@ def main():
     log_path = None
     if sys.platform == 'win32':
         import ctypes
+        # Conda shortcuts start pythonw directly, without an activated shell.
+        if (Path(sys.prefix) / 'conda-meta').is_dir():
+            directories = [str(Path(sys.prefix) / part) for part in ('', 'Library/bin', 'Scripts')]
+            os.environ['PATH'] = os.pathsep.join([*directories, os.environ.get('PATH', '')])
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('Alder.Desktop')
         if sys.stderr is None:
             log_path = Path(os.environ.get('LOCALAPPDATA', Path.home())) / 'Alder' / 'studio.log'
-    elif sys.platform == 'darwin' and getattr(sys, 'frozen', False):
+    elif sys.platform == 'darwin' and (getattr(sys, 'frozen', False) or os.environ.get('ALDER_DESKTOP_LAUNCH')):
         log_path = Path.home() / 'Library' / 'Logs' / 'Alder' / 'studio.log'
+    elif sys.platform.startswith('linux') and (getattr(sys, 'frozen', False) or os.environ.get('ALDER_DESKTOP_LAUNCH')):
+        log_path = Path(os.environ.get('XDG_STATE_HOME') or Path.home() / '.local/state') / 'Alder' / 'studio.log'
     if log_path is not None:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         if log_path.exists() and log_path.stat().st_size > 2_000_000:
-            log_path.replace(log_path.with_suffix('.previous.log'))
+            try:
+                log_path.replace(log_path.with_suffix('.previous.log'))
+            except OSError:
+                # Another running app can keep this file open on Windows.
+                pass
         sys.stderr = log_path.open('a', encoding='utf-8', buffering=1)
         sys.stdout = sys.stderr
         print(f'\nAlder started {datetime.now().isoformat()}', file=sys.stderr)

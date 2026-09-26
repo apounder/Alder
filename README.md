@@ -4,9 +4,45 @@ A desktop app for opening chemistry calculation results, building molecules, and
 making figures. Your structures and calculation files stay on your computer.
 **The viewer, editors, and figure exports work without installing any ML models.**
 
-[Install](#installation) · [Open your first file](#open-your-first-file) ·
+[Desktop downloads](#desktop-downloads) · [Install from source](#installation) · [Open your first file](#open-your-first-file) ·
 [Get model access](#optional-models-and-hugging-face-access) ·
 [See the interface](#interface-and-results) · [Rendering examples](#rendering-styles)
+
+## Desktop downloads
+
+The desktop packages include Python and the graphical setup wizard. Download
+one for your computer from [GitHub Releases](https://github.com/apounder/alder/releases),
+then open it using the steps below. **A local build is not a public download:**
+if Releases has no matching file yet, use [source installation](#installation).
+The [maintainer release guide](packaging/RELEASING.md) explains how to publish all platforms.
+
+| Computer | File under release Assets | Initial installation | Open again later |
+| --- | --- | --- | --- |
+| Windows x64 | `Windows-x64-GUI-Setup.exe` | Open Setup and follow the installer. | **Alder** in Start, or the optional desktop shortcut. |
+| Mac with Apple Silicon | `macOS-AppleSilicon.dmg` | Open the DMG and drag **Alder** to **Applications**. | **Alder** in Applications; you can keep it in the Dock. |
+| Intel Mac | `macOS-Intel.dmg` | Open the DMG and drag **Alder** to **Applications**. | **Alder** in Applications. |
+| Ubuntu 24.04 or compatible newer Linux, Intel/AMD | `Linux-x64.deb` | Open with your graphical package installer. | **Alder** in the applications menu. |
+| Ubuntu 24.04 or compatible newer Linux, ARM64 | `Linux-arm64.deb` | Open with your graphical package installer. | **Alder** in the applications menu. |
+
+Windows uses `.exe`; Mac and Linux use their own native app/package formats.
+No terminal, Python, Git, or Conda is needed for normal use of these packages.
+Windows portable ZIPs and Linux `.tar.gz` archives are alternatives: extract the
+complete folder and open `Alder.exe` or `Alder`, keeping `_internal` beside it.
+Linux portable builds still need [Qt's system libraries](packaging/LINUX.md).
+
+**First launch:** the **Set up Alder** window lets you choose optional MLIP models
+and CPU/NVIDIA hardware. Uncheck every model for the viewer only, or select models
+and follow **Next** through access checks and installation. Model downloads need
+internet and disk space. For UMA, follow [Hugging Face access](#get-access-to-uma-step-by-step).
+
+**Later launches:** open the same app icon. Installed models are reused. To add,
+repair, or change models, use **Local MLIP → Environment / models → Guided setup**.
+
+Windows builds are unsigned. Mac packages require macOS 15+, are not
+Apple-notarized, and remain experimental until validated on a Mac; see the
+[first-launch instructions](packaging/MACOS.md#signing-and-the-first-launch).
+Mac calculations use CPU. Linux packages target Ubuntu-compatible systems;
+see the [Linux guide](packaging/LINUX.md) for other distributions.
 
 ## Installation
 
@@ -17,6 +53,7 @@ Run each command separately and continue only when it succeeds.
 | Your computer | Start here |
 | --- | --- |
 | Windows 10 (1809+) or Windows 11, x64 | [Windows: PowerShell installation](#windows) |
+| Windows with Anaconda, Miniconda, or Miniforge | [Windows: Conda installation](#windows-with-conda) |
 | Mac, Apple Silicon or Intel | [macOS: Terminal installation](#macos) |
 | Linux desktop | [Linux installation](#linux) |
 | Already use Anaconda or Miniforge? | [Conda instructions](docs/INSTALLATION.md#2-conda) |
@@ -59,17 +96,69 @@ an [alternative only when attached to a release](docs/INSTALLATION.md#1-desktop-
    Wait for the app dependencies to install, then follow
    [Finish the terminal setup](#finish-the-terminal-setup) below. Enter `none` at
    the model prompt if you only want the viewer. Alder opens after successful setup.
-5. **Open Alder again later.** Open PowerShell and run:
+5. **Open Alder again later.** Double-click **Alder Source** on your desktop or
+   open it from Start. The terminal fallback is:
 
    ```powershell
    Set-Location ~/alder
    .\.venv\Scripts\python.exe -m alder
    ```
 
-The source installation runs from this folder and does not create a Start menu
-shortcut. Keep the `alder` folder, including its `.venv` subfolder. If you cloned
+Setup creates **Alder Source** shortcuts for this Python installation. Keep the
+`alder` folder, including its `.venv` subfolder; the shortcuts use that environment. If you cloned
 elsewhere, use that location in step 5. You do not need to activate `.venv` or
 change PowerShell's execution policy.
+
+### Windows with Conda
+
+This route installs Python, Git, and Alder together in an environment named
+`alder`. You can use a source ZIP, so a separate Git installation is not needed.
+
+1. **Open a Conda prompt.** If you already have Anaconda, Miniconda, or Miniforge,
+   open **Anaconda Prompt** or **Miniforge Prompt** from the Start menu. Otherwise,
+   follow the [official Conda Windows installation guide](https://docs.conda.io/projects/conda/en/stable/user-guide/install/windows.html)
+   first. Run `conda --version` and check that it reports a version.
+2. **Download the source.** On [Alder's GitHub page](https://github.com/apounder/alder),
+   choose **Code → Download ZIP**, then right-click the downloaded ZIP →
+   **Extract All**. Open the extracted folder containing `environment.yml`.
+   If you already cloned Alder, use that checkout instead.
+3. **Enter that folder in the Conda prompt.** Copy its path from File Explorer's
+   address bar. Use `cd /d` followed by the path in quotes. For example:
+
+   ```bat
+   cd /d "%USERPROFILE%\Downloads\alder-main"
+   ```
+
+   Replace the example path with your actual folder. Run `dir environment.yml`
+   to confirm you are in the right place.
+4. **Install and open setup.** Run one command at a time, waiting for each to succeed:
+
+   ```bat
+   conda env create -f environment.yml
+   conda activate alder
+   alder-setup --launch
+   ```
+
+   Follow [Finish the terminal setup](#finish-the-terminal-setup). Enter `none`
+   for the viewer only, or select the models you want. Alder opens when setup
+   succeeds. This route uses the Conda environment; skip `install.py` and the
+   `.venv` commands from the PowerShell route.
+5. **Open Alder again later.** Use **Alder Source** on your desktop or in Start.
+   To launch from a Conda prompt instead, run:
+
+   ```bat
+   conda activate alder
+   alder
+   ```
+
+The setup command creates **Alder Source** shortcuts pointing to this Conda
+environment. Keep the environment installed. These launchers do not create a
+redistributable Setup.exe; use the desktop release workflow to build installers.
+
+You can launch from any folder after activating the environment. To add models
+later, use **Local MLIP → Environment / models → Guided setup**, or close Alder
+and run `alder-setup --launch` in the activated environment. For updates or an
+existing `alder` environment, see the [Conda maintenance instructions](docs/INSTALLATION.md#2-conda).
 
 ### macOS
 
@@ -115,15 +204,16 @@ GPU acceleration is not implemented.
    Wait for app dependencies to install, then follow
    [Finish the terminal setup](#finish-the-terminal-setup). Enter `none` for the
    viewer only. This command already selects CPU, so there is no hardware prompt.
-5. **Open Alder again later.** Open Terminal and run:
+5. **Open Alder again later.** In Finder, open your home folder → **Applications**
+   → **Alder Source.app**. You can drag it to the Dock. The terminal fallback is:
 
    ```sh
    cd ~/alder
    ./.venv/bin/python -m alder
    ```
 
-Keep the `alder` folder and its hidden `.venv` subfolder. This installation does
-not put an app in Applications. If you cloned elsewhere, use that path in step 5.
+Keep the `alder` folder and its hidden `.venv` subfolder: **Alder Source.app**
+launches this environment. If you cloned elsewhere, use that path in the terminal fallback.
 Run Alder's installation and launch commands as your normal user, without `sudo`.
 
 ### Linux
@@ -155,7 +245,8 @@ other distributions need equivalent Python, Git, and Qt runtime packages.
    Wait for installation to finish. The installer creates a `.venv` folder with
    Alder's Python and dependencies. Node.js and PyTorch are not needed for this route.
 
-4. On later visits, open a terminal in the same `alder` folder and run:
+4. On later visits, open **Alder Source** from the applications menu. The terminal
+   fallback, from the same `alder` folder, is:
 
    ```sh
    ./.venv/bin/python -m alder
@@ -168,6 +259,10 @@ and the [troubleshooting guide](docs/INSTALLATION.md#common-setup-problems).
 
 `install.py` creates a private `.venv` with Alder's Python and desktop
 dependencies, then opens a **text-based walkthrough in the same terminal**.
+With Conda, `conda env create` installs the app and `alder-setup --launch` opens
+the same walkthrough in the activated `alder` environment. Setup also creates
+**Alder Source** launchers, so later launches do not need a terminal. Use
+`--no-shortcuts` to skip launcher creation on a server or managed installation.
 You do not need to install Node.js or PyTorch yourself. If you used Linux's
 `--non-interactive` command above, these prompts are skipped and the viewer opens.
 
@@ -182,7 +277,7 @@ The `--launch` option opens Alder when setup succeeds. Start with
 [Open your first file](#open-your-first-file) below. If setup reports an error,
 read the first error and use [troubleshooting](docs/INSTALLATION.md#common-setup-problems)
 before repeating the same install command. Completed model installations are
-retained. On later visits, use the launch command for your operating system
+retained. On later visits, use the **Alder Source** app icon or the terminal fallback
 instead of running `install.py` again.
 
 **Add models later:** in Alder, open **Local MLIP → Environment / models → Guided
@@ -378,7 +473,9 @@ tests in `tests/*_smoke.py` require a graphical session.
 
 Bundled renderer and editor assets are included. Editing them requires Node.js;
 see [web development](web/README.md). Standalone release instructions are in the
-[Windows](packaging/WINDOWS.md) and [macOS](packaging/MACOS.md) packaging guides.
+[Windows](packaging/WINDOWS.md), [macOS](packaging/MACOS.md), and
+[Linux](packaging/LINUX.md) packaging guides. The [desktop release workflow](packaging/RELEASING.md)
+builds all platforms and attaches validated downloads to a GitHub release draft.
 
 To regenerate the screenshots and figures, run `python scripts/capture_readme.py`
 from an installed source checkout in a graphical desktop session. Captures use

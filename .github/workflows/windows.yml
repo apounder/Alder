@@ -6,9 +6,12 @@ on:
       offline_mlip:
         description: Build the larger offline CPU edition as well as the GUI edition
         type: boolean
-        default: true
-  push:
-    tags: ['v*']
+        default: false
+  workflow_call:
+    inputs:
+      offline_mlip:
+        type: boolean
+        default: false
   pull_request:
 
 permissions:
@@ -54,7 +57,7 @@ jobs:
       - name: Check light native controls
         run: python tests/light_controls_smoke.py
       - name: Prepare and validate offline CPU environments and public models
-        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.offline_mlip)
+        if: inputs.offline_mlip
         run: |
           python scripts/prepare_mlip_offline.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -105,7 +108,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
       - name: Upload MLIP Offline downloads
-        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.offline_mlip)
+        if: inputs.offline_mlip
         uses: actions/upload-artifact@v7
         with:
           name: Alder-Windows-x64-MLIP-Offline

@@ -9,12 +9,20 @@ from alder import launcher
 
 
 @pytest.mark.parametrize('fails', [False, True])
-def test_macos_frozen_startup_keeps_diagnostics(tmp_path, monkeypatch, fails):
+@pytest.mark.parametrize('locked_log', [False, True])
+def test_macos_frozen_startup_keeps_diagnostics(tmp_path, monkeypatch, fails, locked_log):
     report = tmp_path / 'smoke.json'
     fake_sys = SimpleNamespace(platform='darwin', frozen=True, stderr=None, stdout=None,
                                argv=['Alder', '--smoke-test', str(report), str(tmp_path)])
     monkeypatch.setattr(launcher, 'sys', fake_sys)
     monkeypatch.setattr(Path, 'home', lambda: tmp_path)
+    if locked_log:
+        log = tmp_path / 'Library/Logs/Alder/studio.log'
+        log.parent.mkdir(parents=True)
+        log.write_text('x' * 2_000_001)
+        def locked(*args):
+            raise PermissionError('Another desktop instance has the log open')
+        monkeypatch.setattr(Path, 'replace', locked)
 
     def run(path, fixtures):
         assert path == report and fixtures == tmp_path

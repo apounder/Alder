@@ -1,4 +1,4 @@
-"""Dependency notices shared by the Windows and macOS release builders."""
+"""Dependency notices shared by the desktop release builders."""
 from importlib.metadata import distributions
 from pathlib import Path
 import platform

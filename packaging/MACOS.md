@@ -4,6 +4,9 @@ Status: experimental packaging; macOS validation is pending. Run both
 architecture jobs and test the downloaded application on a Mac before a
 general release.
 
+For a complete Windows/Mac/Linux release draft, follow
+[Publish desktop downloads](RELEASING.md). The steps below build Mac apps alone.
+
 ## Build with GitHub Actions
 
 1. In GitHub Desktop, open the repository, commit the changes, and choose
@@ -24,7 +27,8 @@ general release.
    until someone has tried it on a real Mac. The workflow does not publish
    releases automatically or need repository write permissions.
 
-GitHub also runs checks for pull requests and version tags. Standard hosted
+GitHub also runs checks for pull requests. Version tags start the combined
+**Desktop release** workflow, which creates a draft with all platform downloads. Standard hosted
 runners are free for public repositories; private repositories use the
 account's Actions allowance and billing settings. Never upload `.venv`,
 `node_modules`, signing credentials, or build output into source control.

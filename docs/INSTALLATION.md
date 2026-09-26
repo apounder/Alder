@@ -4,9 +4,10 @@
 
 ## Installation
 
-For a first installation, follow the complete terminal walkthrough for
-[Windows](../README.md#windows) or [macOS](../README.md#macos), including prerequisites,
-setup prompts, and later launches. No prebuilt Alder installer is required.
+For the fewest steps, use a published [desktop download](#1-desktop-download).
+For installation from the repository, follow the complete terminal walkthrough for
+[Windows](../README.md#windows), [macOS](../README.md#macos), or
+[Linux](../README.md#linux), including prerequisites, setup prompts, and later launches.
 
 Choose one route below. Each installs the desktop app and provides a walkthrough
 for model selection, CPU/GPU setup, and any required Hugging Face access.
@@ -17,7 +18,7 @@ Calculation environments and downloaded models are saved for future launches.
 | Clone with Git | [Windows or Mac terminal walkthrough](#4-git-clone) | Git and Python 3.11 or newer |
 | You already use Anaconda or Miniforge | [Conda](#2-conda) | Conda and an extracted or cloned copy of this repository |
 | Download GitHub's source ZIP | [Source ZIP](#3-source-zip) | Python 3.11 or newer and Git (for a dependency) |
-| Download a desktop app | [Windows installer or portable download](#1-desktop-download) | A matching release, when available |
+| Download a desktop app | [Windows, Mac, or Linux download](#1-desktop-download) | A matching release, when available |
 
 For first-time model setup, use an internet connection and allow several GB of
 free disk space per calculator. CUDA packages need additional space. Public
@@ -31,8 +32,9 @@ arbitrary Hugging Face models are not automatically compatible.
 ### 1. Desktop download
 
 The GitHub source tree does not contain `dist`: that folder is ignored local
-build output. A maintainer must attach the built installer to a GitHub Release
-before other users can download it. Cloning the repository does not download an EXE.
+build output. The [desktop release workflow](../packaging/RELEASING.md) attaches
+tested installers to a release draft; a maintainer publishes it for public access.
+Cloning the repository does not download an EXE.
 
 Open [GitHub Releases](https://github.com/apounder/alder/releases) and
 choose the download for your computer. **If no matching release is available,
@@ -61,12 +63,20 @@ macOS downloads are experimental: choose the matching Apple Silicon or Intel DMG
 drag **Alder** into **Applications**, and open it. Use CPU for calculations;
 CUDA requires NVIDIA hardware on Windows or Linux. See the
 [macOS guide](../packaging/MACOS.md) for current validation and first-launch details.
-Linux users should use Conda or source installation and have a graphical session
-with the system libraries required by Qt WebEngine.
+On Ubuntu 24.04 or compatible newer Linux, choose the x64 or ARM64 `.deb`, open
+it with your graphical package installer, and then open **Alder** from the
+applications menu. The first launch offers the same model walkthrough. See the
+[Linux guide](../packaging/LINUX.md) for portable archives, system libraries,
+and other distributions.
 
 Windows builds are unsigned; macOS builds are not Apple-notarized.
 
 ### 2. Conda
+
+For Windows, start with the [complete Conda walkthrough](../README.md#windows-with-conda).
+It covers installing Conda, downloading a source ZIP, finding its folder in
+Anaconda/Miniforge Prompt, setup choices, and later launches. The ZIP route needs
+no separate Python or Git installation: `environment.yml` installs both.
 
 Download this repository using **Code → Download ZIP** and extract it, or clone it
 with Git. Open Anaconda Prompt or a terminal where `conda` works, then change to
@@ -77,14 +87,19 @@ Run these commands one at a time; continue after each succeeds:
 ```sh
 conda env create -f environment.yml
 conda activate alder
-alder-setup
+alder-setup --launch
 ```
 
 The first command installs Python, Git, and the desktop dependencies in their own
 environment. The last command walks through all selected model installations.
+Enter `none` for the viewer only; Alder opens after successful setup. Use these
+Conda commands throughout this route; `install.py` would create a separate `.venv`.
 There is no need to find model Python paths or install PyTorch yourself.
 
-For later launches:
+Setup creates **Alder Source**: a Windows Start-menu/desktop shortcut, a Mac app
+in your home **Applications** folder, or a Linux applications-menu entry. Open it
+for later launches without a terminal. Keep the Conda environment installed.
+The terminal alternative remains:
 
 ```sh
 conda activate alder
@@ -97,11 +112,26 @@ update the app from the repository folder and start the new walkthrough:
 ```sh
 conda activate alder
 python -m pip install --upgrade .
-alder-setup
+alder-setup --launch
 ```
 
 This route uses the repository's `environment.yml`. A published
 `conda install alder` package is not currently provided.
+
+If environment creation reports that `alder` already exists, use
+`conda activate alder` and the update commands above from the source folder.
+If creation was interrupted before dependencies finished installing, return to
+that folder and run `conda env update -n alder -f environment.yml`, then activate
+it and rerun `alder-setup --launch`.
+
+If `alder` or `alder-setup` is not recognized after activation, try
+`python -m alder` or `python -m alder setup --launch`, respectively. If Python
+reports `No module named alder`, return to the source folder and run
+`python -m pip install .` in the activated environment before retrying.
+
+For Windows `conda` or activation errors, reopen **Anaconda Prompt** or
+**Miniforge Prompt** from Start. These instructions use that prompt's `cd /d`
+and `%USERPROFILE%` syntax; the PowerShell route uses different commands.
 
 ### 3. Source ZIP
 
@@ -137,7 +167,9 @@ installs the desktop dependencies, and starts the model walkthrough. You do not
 need to activate `.venv`. The pinned cclib source is downloaded automatically
 using Git. Node.js and npm are not needed for this route.
 
-Launch later from that folder on Windows:
+Setup also creates an **Alder Source** launcher (Start/desktop on Windows, home
+Applications on Mac, applications menu on Linux). Open that launcher next time;
+keep the source folder and `.venv` in place. To launch from a terminal on Windows:
 
 ```powershell
 .\.venv\Scripts\python.exe -m alder
@@ -159,8 +191,11 @@ Use the platform-specific commands in the README:
 
 These cover prerequisites, cloning, `install.py`, setup, and later launches.
 Cloning downloads the source; it does not install Alder or produce an EXE/DMG.
-Keep the checkout and its `.venv` folder. Source installs do not create Start
-menu shortcuts or macOS Applications entries.
+Keep the checkout and its `.venv` folder. Setup creates **Alder Source** shortcuts
+using that environment; it does not compile a redistributable installer. Pass
+`--no-shortcuts` to skip launcher creation. If creation fails, setup prints a
+warning and the terminal launch commands still work. Rerun setup after correcting
+the permissions or moving the environment to recreate the launcher.
 
 ## The setup walkthrough
 

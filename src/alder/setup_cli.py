@@ -32,6 +32,7 @@ def main(argv=None):
     parser.add_argument('--non-interactive', action='store_true', help='never prompt; use saved credentials or HF_TOKEN')
     parser.add_argument('--accept-license', action='append', default=[], metavar='CHECKPOINT', help='acknowledge this checkpoint’s published licence (repeat for each)')
     parser.add_argument('--launch', action='store_true', help='open the desktop after successful setup')
+    parser.add_argument('--no-shortcuts', action='store_true', help='skip native app/menu launchers for a source or Conda installation')
     args = parser.parse_args(argv)
     if args.list:
         print_catalogue()
@@ -42,6 +43,13 @@ def main(argv=None):
     if not interactive and args.models is None and not args.check and not args.repair:
         parser.error('No interactive terminal. Supply --models and --device, or run this command in a terminal.')
     try:
+        if not args.check and not args.no_shortcuts:
+            from .desktop import install_shortcuts
+            try:
+                for shortcut in install_shortcuts():
+                    print(f'Open Alder later without a terminal: {shortcut}')
+            except (OSError, subprocess.SubprocessError) as error:
+                print(f'Could not create the app launcher: {error}. You can still use the terminal launch command.')
         root = data_root()
         print('Alder — models and hardware setup\n')
         info = hardware()
