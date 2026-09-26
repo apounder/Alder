@@ -10,54 +10,121 @@ making figures. Your structures and calculation files stay on your computer.
 
 ## Installation
 
-Start with your computer below. You need internet for the initial download;
-viewing local files works offline after installation.
+Use the terminal instructions below to install from this repository. You need
+internet for the initial download; viewing local files works offline afterward.
+Run each command separately and continue only when it succeeds.
 
 | Your computer | Start here |
 | --- | --- |
-| Windows 10 (1809+) or Windows 11, x64 | [Windows installer](#windows) — no Python or terminal needed |
-| Mac | [macOS](#macos) — experimental Apple Silicon and Intel builds |
-| Linux desktop | [Linux](#linux) — install from source |
+| Windows 10 (1809+) or Windows 11, x64 | [Windows: PowerShell installation](#windows) |
+| Mac, Apple Silicon or Intel | [macOS: Terminal installation](#macos) |
+| Linux desktop | [Linux installation](#linux) |
 | Already use Anaconda or Miniforge? | [Conda instructions](docs/INSTALLATION.md#2-conda) |
+
+**You do not need a `dist` folder, EXE, or DMG for these instructions.** `dist`
+contains local build output and is excluded from GitHub. Desktop installers are
+an [alternative only when attached to a release](docs/INSTALLATION.md#1-desktop-download).
 
 ### Windows
 
-1. Open [Alder's Releases page](https://github.com/apounder/alder/releases).
-   Expand **Assets** under the release you want.
-2. Download the file ending in **Windows-x64-GUI-Setup.exe**. The **GUI** edition
-   includes the viewer, molecule builders, and figure renderer. Choose **MLIP
-   Offline** only if you need the larger package with bundled public models.
-3. Open the downloaded file and follow the installer. Windows builds are unsigned;
-   check that your download came from this repository before allowing it to run.
-4. In **Set up Alder**, leave every model unchecked for the viewer only, then
-   follow **Next** through the remaining pages. You can add models later.
-5. Open **Alder** from the Start menu. Continue to [Open your first file](#open-your-first-file).
+1. **Install the prerequisites.** Install [Python 3.11 or newer](https://www.python.org/downloads/windows/)
+   and [Git for Windows](https://git-scm.com/install/windows). If the Python
+   installer offers **Add Python to PATH**, enable it. Then close any existing
+   terminal windows and open **PowerShell** from the Start menu.
+2. **Check the installation.** Run:
 
-**Using the portable download?** Download **Windows-x64-GUI-Portable.zip**,
-right-click → **Extract All**, then open `Alder.exe` in the extracted folder.
-Keep the `_internal` folder beside it. Run the extracted copy, not the copy inside the ZIP.
+   ```powershell
+   python --version
+   git --version
+   ```
 
-**No matching installer under Assets?** Use the
-[source ZIP instructions](docs/INSTALLATION.md#3-source-zip).
-GitHub's **Source code (zip)** download contains the source and needs those extra steps.
+   The first command must report Python **3.11 or newer**; the second must report
+   a Git version. If a command is not recognized or Python opens the Microsoft
+   Store instead, resolve that before continuing; see [troubleshooting](docs/INSTALLATION.md#common-setup-problems).
+3. **Download Alder.** These commands put it in an `alder` folder in your user
+   home folder:
+
+   ```powershell
+   Set-Location ~
+   git clone https://github.com/apounder/alder.git
+   Set-Location alder
+   ```
+
+4. **Install and start setup.** Run this from the folder containing `install.py`:
+
+   ```powershell
+   python install.py --launch
+   ```
+
+   Wait for the app dependencies to install, then follow
+   [Finish the terminal setup](#finish-the-terminal-setup) below. Enter `none` at
+   the model prompt if you only want the viewer. Alder opens after successful setup.
+5. **Open Alder again later.** Open PowerShell and run:
+
+   ```powershell
+   Set-Location ~/alder
+   .\.venv\Scripts\python.exe -m alder
+   ```
+
+The source installation runs from this folder and does not create a Start menu
+shortcut. Keep the `alder` folder, including its `.venv` subfolder. If you cloned
+elsewhere, use that location in step 5. You do not need to activate `.venv` or
+change PowerShell's execution policy.
 
 ### macOS
 
-Mac packaging is experimental, targets macOS 15 or newer, and still needs runtime
-validation on a Mac. See the [Mac guide](packaging/MACOS.md) for its current status.
+The Mac runtime remains experimental and has not been validated on a Mac in this
+project's [test record](docs/MLIP_ACCEPTANCE.md). These instructions install from
+source; they do not require a DMG. Choose CPU for optional calculations; Apple
+GPU acceleration is not implemented.
 
-1. In **Apple menu → About This Mac**, check whether your computer lists an Apple
-   chip (M1, M2, etc.) or an Intel processor.
-2. When available on [Releases](https://github.com/apounder/alder/releases),
-   download the matching **AppleSilicon.dmg** or **Intel.dmg**. Open it and drag
-   **Alder** into **Applications**.
-3. Open **Alder** from Applications. If macOS blocks the unnotarized app, follow
-   the [first-launch instructions](packaging/MACOS.md#signing-and-the-first-launch)
-   for a copy you trust. Leave models unchecked to start with the viewer.
+1. **Install Python.** Download a standard macOS installer for **Python 3.11 or
+   newer** from [python.org](https://www.python.org/downloads/macos/) and follow
+   its prompts. In Finder, open **Applications → Python 3.x** for the version
+   you installed and double-click **Install Certificates.command** to complete
+   its HTTPS setup. See the [official Python Mac instructions](https://docs.python.org/3/using/mac.html#installation-steps).
+2. **Install Git if needed.** Press **Command+Space**, type **Terminal**, and open
+   it. Run `git --version`. If macOS offers to install its Command Line Tools,
+   accept and wait for completion. If Git is unavailable and no prompt appears,
+   run this, follow the installer, and wait for it to finish:
 
-If there is no Mac download, use [Conda](docs/INSTALLATION.md#2-conda) or the
-[source ZIP route](docs/INSTALLATION.md#3-source-zip). Choose **CPU** when adding
-models on macOS; Apple GPU acceleration is not implemented.
+   ```sh
+   xcode-select --install
+   ```
+
+   This is the Command Line Tools route in the [official Git Mac instructions](https://git-scm.com/install/mac).
+3. **Check the prerequisites.** Close and reopen Terminal, then run:
+
+   ```sh
+   python3 --version
+   git --version
+   ```
+
+   Check that Python is **3.11 or newer** and Git reports a version. The Python
+   supplied with Apple's developer tools may be older; use the Python you
+   installed in step 1.
+4. **Download and install Alder.** Run:
+
+   ```sh
+   cd ~
+   git clone https://github.com/apounder/alder.git
+   cd alder
+   python3 install.py --device cpu --launch
+   ```
+
+   Wait for app dependencies to install, then follow
+   [Finish the terminal setup](#finish-the-terminal-setup). Enter `none` for the
+   viewer only. This command already selects CPU, so there is no hardware prompt.
+5. **Open Alder again later.** Open Terminal and run:
+
+   ```sh
+   cd ~/alder
+   ./.venv/bin/python -m alder
+   ```
+
+Keep the `alder` folder and its hidden `.venv` subfolder. This installation does
+not put an app in Applications. If you cloned elsewhere, use that path in step 5.
+Run Alder's installation and launch commands as your normal user, without `sudo`.
 
 ### Linux
 
@@ -96,6 +163,46 @@ other distributions need equivalent Python, Git, and Qt runtime packages.
 
 If Qt reports a missing library, consult its [Linux runtime requirements](https://doc.qt.io/qt-6/linux-requirements.html)
 and the [troubleshooting guide](docs/INSTALLATION.md#common-setup-problems).
+
+### Finish the terminal setup
+
+`install.py` creates a private `.venv` with Alder's Python and desktop
+dependencies, then opens a **text-based walkthrough in the same terminal**.
+You do not need to install Node.js or PyTorch yourself. If you used Linux's
+`--non-interactive` command above, these prompts are skipped and the viewer opens.
+
+| Prompt | What to enter |
+| --- | --- |
+| **Models to set up** | Enter `none` for the viewer, builders, and figure exports. Enter `recommended` for the public AIMNet2 and MACE-ANI-CC models, or use the displayed model numbers. Pressing Enter accepts the displayed default, which is normally `recommended` on first setup. |
+| **Calculation device: auto, cpu, or cuda** | When shown, enter `cpu` for processor calculations or `auto` to detect a supported NVIDIA GPU on Windows/Linux. Mac instructions already select CPU. Choosing `none` skips this question. |
+| **Model access/licence questions** | Only appear for selected restricted models. Read their terms first. UMA also needs [Hugging Face approval and a read token](#get-access-to-uma-step-by-step); pasted tokens stay hidden in the terminal. Public models need no login. |
+| **Continue with setup? yes/no** | Enter `yes`. Optional model downloads can require several GB. Wait for installation and verification to finish. |
+
+The `--launch` option opens Alder when setup succeeds. Start with
+[Open your first file](#open-your-first-file) below. If setup reports an error,
+read the first error and use [troubleshooting](docs/INSTALLATION.md#common-setup-problems)
+before repeating the same install command. Completed model installations are
+retained. On later visits, use the launch command for your operating system
+instead of running `install.py` again.
+
+**Add models later:** in Alder, open **Local MLIP → Environment / models → Guided
+setup**. For the terminal walkthrough, close Alder, return to the same `alder`
+folder, and run the command for your system:
+
+Windows:
+
+```powershell
+.\.venv\Scripts\python.exe -m alder setup --launch
+```
+
+macOS:
+
+```sh
+./.venv/bin/python -m alder setup --device cpu --launch
+```
+
+For a source ZIP instead of Git, follow the [ZIP instructions](docs/INSTALLATION.md#3-source-zip).
+For repairs, checks, or updates, see [ongoing setup](docs/INSTALLATION.md#add-models-repair-or-resume-later).
 
 ## Open your first file
 

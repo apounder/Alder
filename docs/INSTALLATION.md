@@ -4,16 +4,20 @@
 
 ## Installation
 
+For a first installation, follow the complete terminal walkthrough for
+[Windows](../README.md#windows) or [macOS](../README.md#macos), including prerequisites,
+setup prompts, and later launches. No prebuilt Alder installer is required.
+
 Choose one route below. Each installs the desktop app and provides a walkthrough
 for model selection, CPU/GPU setup, and any required Hugging Face access.
 Calculation environments and downloaded models are saved for future launches.
 
 | How you want to install | Start here | What you need first |
 | --- | --- | --- |
-| Download a desktop app | [Windows installer or portable download](#1-desktop-download) | A matching release, when available |
+| Clone with Git | [Windows or Mac terminal walkthrough](#4-git-clone) | Git and Python 3.11 or newer |
 | You already use Anaconda or Miniforge | [Conda](#2-conda) | Conda and an extracted or cloned copy of this repository |
 | Download GitHub's source ZIP | [Source ZIP](#3-source-zip) | Python 3.11 or newer and Git (for a dependency) |
-| Clone with Git | [Git](#4-git-clone) | Git and Python 3.11 or newer |
+| Download a desktop app | [Windows installer or portable download](#1-desktop-download) | A matching release, when available |
 
 For first-time model setup, use an internet connection and allow several GB of
 free disk space per calculator. CUDA packages need additional space. Public
@@ -25,6 +29,10 @@ three MACE-OFF23 sizes, and UMA-s-1p2. Other MLIP families need an integration;
 arbitrary Hugging Face models are not automatically compatible.
 
 ### 1. Desktop download
+
+The GitHub source tree does not contain `dist`: that folder is ignored local
+build output. A maintainer must attach the built installer to a GitHub Release
+before other users can download it. Cloning the repository does not download an EXE.
 
 Open [GitHub Releases](https://github.com/apounder/alder/releases) and
 choose the download for your computer. **If no matching release is available,
@@ -97,19 +105,33 @@ This route uses the repository's `environment.yml`. A published
 
 ### 3. Source ZIP
 
-1. Install [Python](https://www.python.org/downloads/) 3.11 or newer if needed.
-   On Windows, enable **Add Python to PATH**, then reopen your terminal.
-2. Install [Git](https://git-scm.com/downloads) and reopen your terminal. The pinned
-   cclib parser needs Git even when Studio itself comes from a ZIP. If you prefer
-   not to install these prerequisites separately, use the Conda route above.
+1. Complete the prerequisite steps for [Windows](../README.md#windows) or
+   [macOS](../README.md#macos): Python 3.11 or newer and Git. The pinned cclib
+   parser needs Git even when Alder itself comes from a ZIP. Conda is an alternative
+   if you prefer not to install these prerequisites separately.
+2. Check `python --version` on Windows or `python3 --version` on macOS/Linux,
+   and `git --version`. Continue when both work and Python is at least 3.11.
 3. On the GitHub repository page, choose **Code → Download ZIP**, then extract it.
-4. Open a terminal in the extracted folder containing `install.py` and run:
+4. Open a terminal in the extracted folder containing `install.py`. In Windows
+   File Explorer, open that folder, type `powershell` into the address bar, and
+   press Enter. On Mac, open Terminal, type `cd ` (with a space), drag the extracted
+   folder from Finder into Terminal, and press Return.
+5. Run the command for your operating system, then follow the
+   [terminal setup prompts](../README.md#finish-the-terminal-setup).
+
+Windows:
 
 ```powershell
-python install.py
+python install.py --launch
 ```
 
-On macOS or Linux, use `python3 install.py` if your Python command is `python3`.
+macOS:
+
+```sh
+python3 install.py --device cpu --launch
+```
+
+Linux: use `python3 install.py --launch`.
 Setup creates a local `.venv`, downloads a suitable app Python when needed,
 installs the desktop dependencies, and starts the model walkthrough. You do not
 need to activate `.venv`. The pinned cclib source is downloaded automatically
@@ -129,21 +151,22 @@ Or on macOS/Linux:
 
 ### 4. Git clone
 
-Run these commands in PowerShell, Anaconda Prompt, or your terminal:
+Use the platform-specific commands in the README:
 
-```sh
-git clone https://github.com/apounder/alder.git
-cd alder
-python install.py
-```
+- [Windows: PowerShell](../README.md#windows).
+- [macOS: Terminal](../README.md#macos).
+- [Linux: Terminal](../README.md#linux).
 
-On macOS/Linux, use `python3 install.py` if needed. Cloning downloads the source;
-`install.py` installs the app and starts the walkthrough. Later launch commands
-are the same as for the source ZIP above.
+These cover prerequisites, cloning, `install.py`, setup, and later launches.
+Cloning downloads the source; it does not install Alder or produce an EXE/DMG.
+Keep the checkout and its `.venv` folder. Source installs do not create Start
+menu shortcuts or macOS Applications entries.
 
 ## The setup walkthrough
 
 The terminal and desktop walkthroughs use the same setup code and model cache.
+For the exact text prompts and first-time choices, see
+[Finish the terminal setup](../README.md#finish-the-terminal-setup).
 
 1. **Choose models.** Select individual checkpoints, the recommended public models,
    or all supported models. The terminal also accepts backend names such as
@@ -228,6 +251,14 @@ current package installation to finish. Use **Repair** for a broken environment.
 Use **Check** to verify existing packages and weights without downloading them.
 Reopening the app does not reinstall models.
 
+**Update a cloned copy:** close Alder, open a terminal in its checkout, and run
+`git pull --ff-only`. Then rerun `python install.py --launch` on Windows or
+`python3 install.py --device cpu --launch` on macOS. The installer updates the app
+in its existing `.venv`; verified models are reused. If Git reports local changes
+or a divergent branch, resolve those before updating rather than deleting your work.
+Source ZIP users should extract the new source into a new folder and install it
+there; do not copy `.venv` between folders or operating systems.
+
 For unattended public-model setup, explicitly provide the choices:
 
 ```sh
@@ -245,8 +276,14 @@ status; it does not report failed or inaccessible models as ready.
 | --- | --- |
 | `py` is not recognized | Use `python install.py`; these instructions do not require the Windows `py` launcher. |
 | `python` or `git` is not recognized | Install the prerequisite, reopen your terminal, and retry, or use the Conda route. |
-| `.venv\Scripts\python.exe` does not exist | The app installation did not finish. Rerun `python install.py` and resolve its first error. |
+| `python` opens the Microsoft Store on Windows | Finish installing Python from python.org and reopen PowerShell. Follow [Python's Windows command troubleshooting](https://docs.python.org/3/using/windows.html#troubleshooting) if the command still launches the Store; verify `python --version` before continuing. |
+| Mac `python3 --version` is older than 3.11 | Install a current Python from python.org, reopen Terminal, and check again. Do not replace or remove Apple's system Python. |
+| Mac reports a certificate verification error | For a python.org installation, run **Applications → Python 3.x → Install Certificates.command** for the version used to start setup, then retry. See [Python's Mac installation steps](https://docs.python.org/3/using/mac.html#installation-steps). |
+| Mac asks for Command Line Tools when running Git | Finish the macOS installer before running the clone command. If needed, start it with `xcode-select --install`. |
+| `destination path 'alder' already exists` | If it is your existing checkout, enter it and run the install command there. Otherwise, choose another parent folder for the clone and use that location for later launches. |
+| `can't open file 'install.py'` | Change into the cloned or extracted folder containing `install.py`, then rerun the command. |
+| `.venv\Scripts\python.exe` (Windows) or `.venv/bin/python` (Mac/Linux) does not exist | Check that you are in the right `alder` folder. If so, installation did not finish: rerun the platform's `install.py` command and resolve its first error. |
+| No Alder entry in Start or Applications after source installation | Expected: launch it with the platform's `.venv` command in the README. Only a separate packaged desktop installer provides the desktop app installation. |
 | GPU detected but CUDA check fails | Update the NVIDIA driver, reopen Guided setup and choose CUDA/Repair; CPU is also available. |
 | Hugging Face returns access denied | Check model approval and token permissions; a valid token alone is not approval. Other public models do not need it. |
 | An interrupted or failed model installation | Rerun setup; use Repair for a damaged environment or checksum failure. Keep the cached models and job folder. |
-
