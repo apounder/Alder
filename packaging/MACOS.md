@@ -4,7 +4,7 @@ Status: experimental packaging; macOS validation is pending. Run both
 architecture jobs and test the downloaded application on a Mac before a
 general release.
 
-For normal installation, use the [Mac terminal walkthrough](../README.md#macos).
+For normal installation, use the [Mac terminal walkthrough](../docs/INSTALLATION.md#macos).
 The experimental packaging steps below are separate from the Windows release.
 
 ## Build with GitHub Actions

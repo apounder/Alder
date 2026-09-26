@@ -47,4 +47,4 @@ That individual workflow uploads temporary Actions artifacts; **Windows release*
 creates the public-download draft automatically.
 
 See [Windows packaging details](WINDOWS.md), or the terminal instructions for
-[Mac](../README.md#macos) and [Linux](../README.md#linux).
+[Mac](../docs/INSTALLATION.md#macos) and [Linux](../docs/INSTALLATION.md#linux).

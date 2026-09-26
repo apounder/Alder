@@ -2,7 +2,7 @@
 
 The GitHub workflow targets **Ubuntu 24.04 and compatible newer systems**, with
 separate **x64** (Intel/AMD) and **ARM64** downloads. Other distributions should
-use the [source installation](../README.md#linux) unless their libraries match.
+use the [source installation](../docs/INSTALLATION.md#linux) unless their libraries match.
 A graphical desktop session is required; these are not server applications.
 
 ## Install and open
@@ -46,7 +46,7 @@ Uninstall with your package manager; downloaded models and user data are retaine
 
 ## Build and validate
 
-For normal installation, use the [Linux terminal walkthrough](../README.md#linux).
+For normal installation, use the [Linux terminal walkthrough](../docs/INSTALLATION.md#linux).
 Experimental packages can be built with **Actions → Linux download → Run workflow**.
 These builds are separate from the Windows release.
 Both architectures run the tests, build a relocatable executable, launch it from
