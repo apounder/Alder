@@ -118,6 +118,15 @@ jobs:
           compression-level: 0
           if-no-files-found: error
           retention-days: 30
+      - name: Collect application logs
+        if: always()
+        run: |
+          $logDir = Join-Path $env:GITHUB_WORKSPACE 'build/test-logs'
+          New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+          $appLogs = Join-Path $env:LOCALAPPDATA 'Alder'
+          if (Test-Path -LiteralPath $appLogs) {
+            Get-ChildItem -LiteralPath $appLogs -Filter '*.log' -File | Copy-Item -Destination $logDir -Force
+          }
       - name: Upload build diagnostics
         if: always()
         uses: actions/upload-artifact@v7
@@ -127,5 +136,5 @@ jobs:
             build/*-smoke.json
             build/installer.log
             build/Alder/warn-*.txt
-            ~/AppData/Local/Alder/*.log
+            build/test-logs/*.log
           if-no-files-found: ignore
