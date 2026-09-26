@@ -4,6 +4,8 @@ Alder runs molecular calculations in separate Python processes. The desktop view
 
 ## First use
 
+New to model downloads? Follow the [illustrated setup and Hugging Face access steps](../README.md#optional-models-and-hugging-face-access) first.
+
 1. Follow the [installation instructions](../README.md#installation). Source/Conda users run the terminal walkthrough; a fresh desktop launch opens the graphical walkthrough. Reopen it with **Local MLIP → Environment / models → Guided setup**.
 2. Choose the checkpoints you want and **Automatic**, **CPU**, or **CUDA**. Hardware detection runs on this computer before installing model packages. Automatic prefers an available NVIDIA GPU; a driver-query error requires a recheck or an explicit CPU choice. For an offline CPU bundle, choose CPU to avoid an online CUDA installation.
 3. Follow the access/licence prompts before large calculator downloads. Public MACE-ANI-CC and AIMNet2 need no account. UMA needs approved Hugging Face access and a read token; MACE-OFF23 needs licence acknowledgement. Setup installs separate Python environments and runs a real water energy/force check on the selected device before marking a checkpoint ready. Allow several GB per calculator. No manually entered Python paths are needed.

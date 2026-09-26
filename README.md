@@ -1,409 +1,256 @@
 # Alder
 
-![Alder logo and reaction profile](docs/assets/alder-header.png)
+A desktop app for opening chemistry calculation results, building molecules, and
+making figures. Your structures and calculation files stay on your computer.
+**The viewer, editors, and figure exports work without installing any ML models.**
 
-An offline desktop application for viewing computational chemistry results,
-building molecules, running local MLIP calculations, and exporting figures. Calculation files and structures
-are processed locally.
-
-## Features
-
-- Gaussian and ORCA results: optimization trajectories, energies, orbital
-  levels, animated vibrations, and UV–Vis spectra from reported excited states.
-- IRC profiles and 1D/2D scan maps with linked geometries and path playback;
-  unrestricted, CPCM/SMD solvent, and MP2 jobs.
-- Multiple loaded calculations, structure overlays, rigid alignment, RMSD,
-  explicit atom correspondence, individual structure colors, and adjustable playback speed.
-- Gaussian/ORCA input setup with live preview and local input-file export.
-- Local UMA, MACE and AIMNet2 calculations: energies/forces, optimization and
-  constraints, frequencies, scans, TS/IRC, NEB, MD and conformer sampling, with
-  managed environments, a persistent queue and saved partial results. See the
-  [setup guide](docs/MLIP.md) and [tested compatibility](docs/MLIP_ACCEPTANCE.md).
-- ASE/Sella `.traj`, extended XYZ, and geomeTRIC optimization XYZ trajectories,
-  including saved energies and maximum forces when available.
-- UV–Vis transition tables, Gaussian/Lorentzian broadening, wavelength/energy
-  axes, CSV data export, and PNG/SVG/PDF plots. Tested with TDDFT/TDA, CIS,
-  ADC(2), EOM-CCSD, and STEOM-CCSD outputs.
-- Interactive 3D structures with shared appearance controls, atom labels,
-  distance, angle, and dihedral measurements, adjustable depth-cue fog, and
-  colors for all 118 elements. Familiar main-group colors are retained;
-  metals use related, muted shades across all 3D views and exports.
-- 2D and 3D molecule editing with SMILES input, atom substitution, ring and
-  functional-group insertion, hydrogen adjustment, and undo/redo.
-- Cube-field visualization, including orbitals, ESP, NCI, and IGM/IGMH.
-- Dative arrows and dashed transition-state bonds in the shared 3D renderer.
-- Structure export to MOL, XYZ, and PDB; Studio or ray-traced PNG/TIFF figures
-  with transparent backgrounds, and WebM trajectory/vibration movies.
+[Install](#installation) · [Open your first file](#open-your-first-file) ·
+[Get model access](#optional-models-and-hugging-face-access) ·
+[See the interface](#interface-and-results) · [Rendering examples](#rendering-styles)
 
 ## Installation
 
-Choose one route below. Each installs the desktop app and provides a walkthrough
-for model selection, CPU/GPU setup, and any required Hugging Face access.
-Calculation environments and downloaded models are saved for future launches.
+Start with your computer below. You need internet for the initial download;
+viewing local files works offline after installation.
 
-| How you want to install | Start here | What you need first |
+| Your computer | Start here |
+| --- | --- |
+| Windows 10 (1809+) or Windows 11, x64 | [Windows installer](#windows) — no Python or terminal needed |
+| Mac | [macOS](#macos) — experimental Apple Silicon and Intel builds |
+| Linux desktop | [Linux](#linux) — install from source |
+| Already use Anaconda or Miniforge? | [Conda instructions](docs/INSTALLATION.md#2-conda) |
+
+### Windows
+
+1. Open [Alder's Releases page](https://github.com/apounder/alder/releases).
+   Expand **Assets** under the release you want.
+2. Download the file ending in **Windows-x64-GUI-Setup.exe**. The **GUI** edition
+   includes the viewer, molecule builders, and figure renderer. Choose **MLIP
+   Offline** only if you need the larger package with bundled public models.
+3. Open the downloaded file and follow the installer. Windows builds are unsigned;
+   check that your download came from this repository before allowing it to run.
+4. In **Set up Alder**, leave every model unchecked for the viewer only, then
+   follow **Next** through the remaining pages. You can add models later.
+5. Open **Alder** from the Start menu. Continue to [Open your first file](#open-your-first-file).
+
+**Using the portable download?** Download **Windows-x64-GUI-Portable.zip**,
+right-click → **Extract All**, then open `Alder.exe` in the extracted folder.
+Keep the `_internal` folder beside it. Run the extracted copy, not the copy inside the ZIP.
+
+**No matching installer under Assets?** Use the
+[source ZIP instructions](docs/INSTALLATION.md#3-source-zip).
+GitHub's **Source code (zip)** download contains the source and needs those extra steps.
+
+### macOS
+
+Mac packaging is experimental, targets macOS 15 or newer, and still needs runtime
+validation on a Mac. See the [Mac guide](packaging/MACOS.md) for its current status.
+
+1. In **Apple menu → About This Mac**, check whether your computer lists an Apple
+   chip (M1, M2, etc.) or an Intel processor.
+2. When available on [Releases](https://github.com/apounder/alder/releases),
+   download the matching **AppleSilicon.dmg** or **Intel.dmg**. Open it and drag
+   **Alder** into **Applications**.
+3. Open **Alder** from Applications. If macOS blocks the unnotarized app, follow
+   the [first-launch instructions](packaging/MACOS.md#signing-and-the-first-launch)
+   for a copy you trust. Leave models unchecked to start with the viewer.
+
+If there is no Mac download, use [Conda](docs/INSTALLATION.md#2-conda) or the
+[source ZIP route](docs/INSTALLATION.md#3-source-zip). Choose **CPU** when adding
+models on macOS; Apple GPU acceleration is not implemented.
+
+### Linux
+
+Use a normal graphical desktop session. These commands are for **Ubuntu 24.04**;
+other distributions need equivalent Python, Git, and Qt runtime packages.
+
+1. Open **Terminal** (Ctrl+Alt+T on Ubuntu). Run these commands one at a time.
+   `sudo` may ask for your Linux password; no characters appear while you type it.
+
+   ```sh
+   sudo apt update
+   sudo apt install python3 git libegl1 libopengl0 libnss3 libxcb-cursor0 libxkbcommon-x11-0 libasound2t64
+   ```
+
+2. Download Alder into a new folder and enter it:
+
+   ```sh
+   git clone https://github.com/apounder/alder.git
+   cd alder
+   ```
+
+3. Install the app and open it with model downloads skipped:
+
+   ```sh
+   python3 install.py --models none --device cpu --non-interactive --launch
+   ```
+
+   Wait for installation to finish. The installer creates a `.venv` folder with
+   Alder's Python and dependencies. Node.js and PyTorch are not needed for this route.
+
+4. On later visits, open a terminal in the same `alder` folder and run:
+
+   ```sh
+   ./.venv/bin/python -m alder
+   ```
+
+If Qt reports a missing library, consult its [Linux runtime requirements](https://doc.qt.io/qt-6/linux-requirements.html)
+and the [troubleshooting guide](docs/INSTALLATION.md#common-setup-problems).
+
+## Open your first file
+
+1. Open Alder and click **Open files** at the top, or drag a file into the window.
+   Use a Gaussian `.log`, ORCA `.out`, or molecular `.xyz` file.
+2. Try [gaussian-opt.log](tests/data/gaussian-opt.log) if you do not have a file
+   handy. On its GitHub page, click **Download raw file**, save it, and open that
+   downloaded file in Alder. Source downloads already include it in `tests/data`.
+3. Drag the structure to rotate it and scroll to zoom. Click a point in
+   **Energy profile**, move the geometry slider, or press **Play** to inspect the steps.
+4. For **Vibrations**, open [gaussian-freq.log](tests/data/gaussian-freq.log);
+   for **UV–Vis**, open [gaussian-td.log](tests/data/gaussian-td.log).
+5. To save a molecular image, choose a style from **View → Shared 3D appearance**,
+   then click **Export figure**. Choose a filename ending in `.png` or `.tif`.
+
+Only results present in the file appear. A plain XYZ contains geometry and will
+not produce orbital levels or spectra. These examples come from cclib;
+[their sources and licences](tests/data/README.md) are included.
+
+## Optional models and Hugging Face access
+
+MLIP means *machine-learning interatomic potential*: a model that estimates
+energies and forces for local calculations. Add these when you want Alder to
+run calculations, rather than just view existing output files.
+
+Open **Local MLIP → Environment / models → Guided setup**. Choose your models,
+then **Processor (CPU)** or **Automatic — detect this computer**. CUDA needs a
+supported NVIDIA GPU and driver. Allow several GB per calculator and more for
+GPU packages; setup downloads the packages and checks each selected model.
+
+| Model available in Alder | Account/access needed | What to do |
 | --- | --- | --- |
-| Download a desktop app | [Windows installer or portable download](#1-desktop-download) | A matching release, when available |
-| You already use Anaconda or Miniforge | [Conda](#2-conda) | Conda and an extracted or cloned copy of this repository |
-| Download GitHub's source ZIP | [Source ZIP](#3-source-zip) | Python 3.11 or newer and Git (for a dependency) |
-| Clone with Git | [Git](#4-git-clone) | Git and Python 3.11 or newer |
+| AIMNet2 checkpoints | No account | Select a checkpoint in Guided setup. |
+| MACE-ANI-CC | No account | Select it in Guided setup. |
+| UMA (`uma-s-1p2`) | Hugging Face account, model approval, and a read token | Follow the steps below. |
+| MACE-OFF23 (small, medium, large) | Separate licence acknowledgement | Read the [model owner's terms](https://github.com/ACEsuit/mace-off), then acknowledge them in setup if they apply to your use. No Hugging Face login is used for this download. |
 
-For first-time model setup, use an internet connection and allow several GB of
-free disk space per calculator. CUDA packages need additional space. Public
-AIMNet2 and MACE-ANI-CC models need no account. UMA requires Hugging Face access;
-MACE-OFF23 requires licence acknowledgement.
+### Get access to UMA, step by step
 
-“All models” means the supported catalogue: four AIMNet2 checkpoints, MACE-ANI-CC,
-three MACE-OFF23 sizes, and UMA-s-1p2. Other MLIP families need an integration;
-arbitrary Hugging Face models are not automatically compatible.
+1. [Create a Hugging Face account](https://huggingface.co/join), or sign in.
+2. Open the [official facebook/UMA model page](https://huggingface.co/facebook/UMA).
+   Read the conditions, complete its access form accurately, and submit it.
+   Follow the page's approval instructions before attempting the download.
+3. Once your account has access, open [Settings → Access Tokens](https://huggingface.co/settings/tokens).
+   Create a **read** token, or a **fine-grained** token permitted to read
+   `facebook/UMA`. Use the same account that received model access.
+4. Return to Alder's **Guided setup**, select **uma-s-1p2**, and proceed to
+   **Model access and licences**. Paste your token into the masked **Hugging Face
+   read token** field. A token is a password-like credential; keep it private.
+5. Acknowledge the terms you have reviewed, then continue. Wait for the download
+   and calculation check to succeed before using the model. The official client
+   saves the login locally, and downloaded weights are reused on later launches.
 
-### 1. Desktop download
+A token identifies your account; it does **not** grant model approval. If you see
+“access denied,” check both the model page and the token permissions. See
+[Hugging Face's gated-model guide](https://huggingface.co/docs/hub/models-gated)
+and [token guide](https://huggingface.co/docs/hub/security-tokens).
 
-Open [GitHub Releases](https://github.com/apounder/alder/releases) and
-choose the download for your computer. **If no matching release is available,
-use the Conda or source instructions below.** A source ZIP is not a desktop installer.
+UMA and MACE-OFF23 end-to-end model validation remains pending access/licence
+approval in this project's [test record](docs/MLIP_ACCEPTANCE.md). Alder installs
+its supported catalogue, not arbitrary models found on Hugging Face.
+For job settings, model domains, repairs, and offline use, read the [MLIP guide](docs/MLIP.md).
 
-On Windows 10 (1809+) or Windows 11, download the x64 **Setup.exe**, open it,
-and follow the installation and model setup windows. Then open **Alder**
-from the Start menu. Python, Conda, Git, and Node.js are not required.
+<details>
+<summary>See the model setup window</summary>
 
-Alternatively, download a **Portable.zip**, right-click it, choose **Extract All**,
-and open `Alder.exe` inside the extracted folder. Keep `_internal` beside
-the executable and, if included, the complete `mlip-offline` folder. Do not run
-the executable from inside the ZIP.
+![Alder setup listing optional models and CPU or GPU hardware choices](docs/assets/screenshots/setup.png)
 
-| Windows edition | What is included |
+</details>
+
+## Interface and results
+
+The calculation details sit on the left, the structure viewer on the right, and
+results tabs below it. Click any image to view it at full size.
+
+![Alder displaying a Gaussian optimization, molecular geometry, and linked energy profile](docs/assets/screenshots/overview.png)
+
+These are captures of the running Windows app using included calculation files.
+The plots show reported calculation data. Fonts and window decorations may differ
+on other operating systems.
+
+### Energy profile and step data
+
+Click a point or a table row to inspect its geometry. Example:
+[gaussian-opt.log](tests/data/gaussian-opt.log).
+
+| Energy profile | Step data |
 | --- | --- |
-| **GUI** | Viewer, editors, and exports. The walkthrough downloads your selected calculation environments and weights. |
-| **MLIP Offline** | The same app, plus CPU environments and five public checkpoints. These can be set up without internet. GPU setup needs an online CUDA download; UMA and MACE-OFF23 weights are not included. |
+| ![Relative energy across five optimization steps](docs/assets/screenshots/energy-profile.png) | ![Absolute and relative energies for each geometry](docs/assets/screenshots/step-data.png) |
 
-The guided installer described here requires a release built from this version
-of the source. Older downloads may only have the earlier **Set up selected model**
-screen. A fresh portable launch also offers the walkthrough. Existing users can
-open **Local MLIP → Environment / models → Guided setup** at any time.
+### Orbital levels and vibrations
 
-macOS downloads are experimental: choose the matching Apple Silicon or Intel DMG,
-drag **Alder** into **Applications**, and open it. Use CPU for calculations;
-CUDA requires NVIDIA hardware on Windows or Linux. See the
-[macOS guide](packaging/MACOS.md) for current validation and first-launch details.
-Linux users should use Conda or source installation and have a graphical session
-with the system libraries required by Qt WebEngine.
+Select an orbital to highlight its energy, or select a vibration and press
+**Play mode**. Example: [gaussian-freq.log](tests/data/gaussian-freq.log).
 
-Windows builds are unsigned; macOS builds are not Apple-notarized.
-
-### 2. Conda
-
-Download this repository using **Code → Download ZIP** and extract it, or clone it
-with Git. Open Anaconda Prompt or a terminal where `conda` works, then change to
-the extracted `alder` or `alder-main` folder.
-
-Run these commands one at a time; continue after each succeeds:
-
-```sh
-conda env create -f environment.yml
-conda activate alder
-alder-setup
-```
-
-The first command installs Python, Git, and the desktop dependencies in their own
-environment. The last command walks through all selected model installations.
-There is no need to find model Python paths or install PyTorch yourself.
-
-For later launches:
-
-```sh
-conda activate alder
-alder
-```
-
-If you already created this Conda environment using the previous instructions,
-update the app from the repository folder and start the new walkthrough:
-
-```sh
-conda activate alder
-python -m pip install --upgrade .
-alder-setup
-```
-
-This route uses the repository's `environment.yml`. A published
-`conda install alder` package is not currently provided.
-
-### 3. Source ZIP
-
-1. Install [Python](https://www.python.org/downloads/) 3.11 or newer if needed.
-   On Windows, enable **Add Python to PATH**, then reopen your terminal.
-2. Install [Git](https://git-scm.com/downloads) and reopen your terminal. The pinned
-   cclib parser needs Git even when Studio itself comes from a ZIP. If you prefer
-   not to install these prerequisites separately, use the Conda route above.
-3. On the GitHub repository page, choose **Code → Download ZIP**, then extract it.
-4. Open a terminal in the extracted folder containing `install.py` and run:
-
-```powershell
-python install.py
-```
-
-On macOS or Linux, use `python3 install.py` if your Python command is `python3`.
-Setup creates a local `.venv`, downloads a suitable app Python when needed,
-installs the desktop dependencies, and starts the model walkthrough. You do not
-need to activate `.venv`. The pinned cclib source is downloaded automatically
-using Git. Node.js and npm are not needed for this route.
-
-Launch later from that folder on Windows:
-
-```powershell
-.\.venv\Scripts\python.exe -m alder
-```
-
-Or on macOS/Linux:
-
-```sh
-./.venv/bin/python -m alder
-```
-
-### 4. Git clone
-
-Run these commands in PowerShell, Anaconda Prompt, or your terminal:
-
-```sh
-git clone https://github.com/apounder/alder.git
-cd alder
-python install.py
-```
-
-On macOS/Linux, use `python3 install.py` if needed. Cloning downloads the source;
-`install.py` installs the app and starts the walkthrough. Later launch commands
-are the same as for the source ZIP above.
-
-## The setup walkthrough
-
-The terminal and desktop walkthroughs use the same setup code and model cache.
-
-1. **Choose models.** Select individual checkpoints, the recommended public models,
-   or all supported models. The terminal also accepts backend names such as
-   `aimnet2`. Choose `none`, or uncheck all models in the GUI, for the viewer only.
-2. **Choose hardware.** Automatic mode checks the current computer for an NVIDIA
-   GPU and driver. You can explicitly choose CPU or CUDA. A failed hardware scan
-   gives an error and a recheck/CPU choice.
-3. **Connect Hugging Face when required.** Setup explains which selected models
-   need an account and checks access before downloading their calculation packages.
-4. **Install and verify.** Setup installs the selected dependencies, downloads
-   weights, and runs a real energy/force calculation on the selected device.
-   A model is marked ready only after that check passes.
-
-For UMA, open the [model access page](https://huggingface.co/facebook/UMA), sign in,
-and request/accept the required access. Create a
-[read token](https://huggingface.co/settings/tokens) permitted to read the model,
-then paste it into setup's hidden token field. Existing Hugging Face logins are
-reused. A valid token does not itself grant gated-model approval. Setup reports
-access problems and retains successfully installed models so you can retry later.
-
-Tokens are handled by the official Hugging Face client and are not saved in job
-records or setup reports. Public models and verified cached weights do not require
-a new login. You are asked to acknowledge restricted checkpoint licences before
-downloading them; choosing “all” does not bypass those requirements.
-
-## CPU and NVIDIA GPU support
-
-Hardware detection runs on **each computer during setup**, independently of any
-existing model environment. CPU setup explicitly requests CPU PyTorch packages.
-CUDA setup asks the package manager to select the official CUDA build for that
-computer's driver, then verifies GPU allocation and the actual model calculation.
-See [uv's PyTorch integration](https://docs.astral.sh/uv/guides/integration/pytorch/)
-for the underlying package selection mechanism.
-
-| Your hardware | Calculation choice |
+| Orbital levels | Vibrations |
 | --- | --- |
-| Windows/Linux with a supported NVIDIA GPU and driver | Automatic or CUDA; CPU remains available |
-| Windows/Linux without a working NVIDIA GPU | CPU |
-| macOS, or AMD/Intel graphics without NVIDIA CUDA | CPU; Apple GPU/ROCm acceleration is not implemented |
+| ![Occupied and virtual orbital energies with the HOMO and LUMO](docs/assets/screenshots/orbital-levels.png) | ![Normal-mode frequencies, IR intensities, spectrum, and animation controls](docs/assets/screenshots/vibrations.png) |
 
-A compatible NVIDIA driver is required. Setup handles the application packages;
-if the driver is missing or outdated, use the
-[official NVIDIA driver download](https://www.nvidia.com/Download/index.aspx),
-restart if requested, and recheck. Installing a separate CUDA Toolkit is not part
-of the normal setup. Older GPUs, incompatible drivers, or unavailable package
-builds may require CPU. GPU memory also limits molecule size. Real hardware test
-results and remaining limits are listed in [MLIP acceptance](docs/MLIP_ACCEPTANCE.md).
+### UV–Vis and IRC / Scans
 
-**If you previously installed CPU-only packages:** open **Local MLIP → Environment /
-models → Guided setup**, choose **NVIDIA graphics card (CUDA)**, and continue.
-Or, in your activated Conda/app environment, run:
+Adjust spectrum broadening or click a scan-map cell to inspect a calculated
+point. Try [gaussian-td.log](tests/data/gaussian-td.log) and
+[gaussian-scan2d.log](tests/data/gaussian-scan2d.log), respectively.
 
-```sh
-alder-setup --device cuda
-```
-
-The walkthrough creates a replacement when needed, reuses cached model weights,
-and registers the replacement only after a successful calculation. Existing jobs
-and the previous environment are retained. Close the GUI before running terminal
-setup, or use Guided setup inside the GUI.
-
-## Add models, repair, or resume later
-
-In an activated app environment:
-
-```sh
-alder-setup
-alder-setup --models all --device auto
-alder-setup --repair --device cuda
-alder-setup --check
-```
-
-For the source installer on Windows, use
-`.\.venv\Scripts\python.exe -m alder setup` with the same options;
-on macOS/Linux, use `./.venv/bin/python -m alder setup`.
-If a command is not on PATH, `python -m alder setup` also works inside
-the activated app environment.
-
-Repeat setup after an interruption. Completed environments and verified weights
-are reused; failed models remain clearly identified. Cancel may wait for the
-current package installation to finish. Use **Repair** for a broken environment.
-Use **Check** to verify existing packages and weights without downloading them.
-Reopening the app does not reinstall models.
-
-For unattended public-model setup, explicitly provide the choices:
-
-```sh
-alder-setup --models recommended --device cpu --non-interactive
-```
-
-Restricted-model automation can use an existing Hugging Face login or `HF_TOKEN`,
-and `--accept-license CHECKPOINT` for each licence you have reviewed and accepted.
-Never put a token in a command argument. Incomplete setup returns a nonzero exit
-status; it does not report failed or inaccessible models as ready.
-
-### Common setup problems
-
-| What you see | What to do |
+| UV–Vis | IRC / Scans |
 | --- | --- |
-| `py` is not recognized | Use `python install.py`; these instructions do not require the Windows `py` launcher. |
-| `python` or `git` is not recognized | Install the prerequisite, reopen your terminal, and retry, or use the Conda route. |
-| `.venv\Scripts\python.exe` does not exist | The app installation did not finish. Rerun `python install.py` and resolve its first error. |
-| GPU detected but CUDA check fails | Update the NVIDIA driver, reopen Guided setup and choose CUDA/Repair; CPU is also available. |
-| Hugging Face returns access denied | Check model approval and token permissions; a valid token alone is not approval. Other public models do not need it. |
-| An interrupted or failed model installation | Rerun setup; use Repair for a damaged environment or checksum failure. Keep the cached models and job folder. |
+| ![Reported transitions and a broadened calculated absorption spectrum](docs/assets/screenshots/uv-vis.png) | ![Two-dimensional energy scan map with linked geometries](docs/assets/screenshots/scan-map.png) |
 
-## Usage
+<details>
+<summary>See the molecule builder</summary>
 
-1. Use **Open files** or drag files into the window. Gaussian/ORCA outputs and
-   XYZ structures open in the calculation viewer. Multi-frame XYZ, `.extxyz`, and
-   `.traj` retain all frames for playback. MOL, SDF, and PDB open in **Build**.
-   Use **Build → Edit geometry** to edit a copy of a viewed XYZ frame.
-2. Inspect calculation steps, orbital levels, vibrations, and UV–Vis spectra in the
-   results panel. Use **Build** to create or edit a molecule in 2D or 3D.
-3. Load `.cube` or `.cub` files in **Surfaces** and select the surface and color
-   fields. ESP, NCI, and IGM visualizations require precomputed fields.
-4. Adjust the appearance in **View**. Under **Figure**, select two atoms and set
-   a single, double, triple, **Dative →**, or **TS ⋯** bond, or remove it; select
-   the donor first for dative arrows. These edits do not move atoms or adjust
-   hydrogens. They remain in playback, comparison overlays, copied structures,
-   and exported figures. The Build bond selector also supports dative and TS bonds.
-5. In **Figure**, choose **Ray traced** and the sample count, then export an
-   image or video. Videos can include every calculation geometry, linked IRC/scan
-   points, or the selected mode from **Results → Vibrations**. Rendering is local
-   and cancellable; no external video encoder is needed.
+Use **Build** to draw or edit in 2D/3D, enter SMILES, add fragments, and adjust
+hydrogens. Save with **Export MOL** to preserve bond orders; drafts are not saved
+automatically when you close the app.
 
-Click **Measure** above the canvas and choose **Bond length**, **Angle**, or
-**Dihedral**, then pick 2, 3, or 4 atoms in order. For an angle, pick its vertex
-second; for a dihedral, pick along the four-atom torsion. The readout shows atom
-indices and Å or degrees, with a dashed guide on the structure. Distances can
-also be measured between unbonded atoms. **Clear** or Escape resets the picks;
-click Measure again to close the tool. The same tool works in Calculation,
-Compare, Figure, and 3D Build. Values update during trajectory/vibration playback
-and builder drags; new calculations clear the picks.
+![Alder's 3D molecule builder displaying caffeine and editing tools](docs/assets/screenshots/builder.png)
 
-Enable **View → Fog / depth cue** to fade distant geometry into the background.
-Click **Depth cue**, then an atom, to set where fading starts. With fog enabled,
-right-drag empty space horizontally to move its start depth; **Shift + right-drag**
-still pans. Strength and depth sliders are also available in View. Fog applies to
-Studio and ray-traced images and videos; transparent exports keep their alpha.
+</details>
 
-Open multiple outputs together to enter **Compare**, or add files from that tab.
-Choose the reference and a frame for each structure. Alignment uses an unweighted
-proper rotation and translation; reflections are excluded. Heavy atoms are used
-by default. Correspondence follows element order after filtering hydrogens;
-equivalent atoms are not automatically permuted. For reordered atoms or shared
-fragments, select a row and enter reference:moving pairs such as `1:3, 2:1, 3:2`.
-Explicit pairs override the heavy-atom filter. RMSD is reported before and after
-alignment and can be exported to CSV. **Solid color per structure** and each row's
-color button style overlays, which can be exported through **Figure**. Original
-coordinates are unchanged. Switch individual outputs in **Calculation**.
+## Rendering styles
 
-**Calculation setup** uses the current calculation geometry, the reference in
-Compare, or the 3D builder.
-It writes Gaussian `.gjf` or ORCA `.inp` files for single points, optimization,
-frequencies, TS optimization, IRC, relaxed 1D/2D scans, and TDDFT/TDA. Charge,
-multiplicity, method, basis, solvent, resources, and additional keywords are
-editable. ORCA memory per process uses 80% of the entered total memory budget.
-The app prepares inputs; running calculations requires the corresponding engine.
+Choose a preset under **View → Shared 3D appearance**. These are actual **Studio**
+exports of the same illustrative caffeine geometry, generated with RDKit. Flat,
+Tube, Ball and tube, Wire, and vdW are inspired by
+[xyzrender's styles](https://xyzrender.readthedocs.io/en/latest/configuration.html).
+The presets also set representation, outlines, and projection defaults.
 
-**Local MLIP** runs calculations in separate, reusable environments. Use **Guided
-setup** to select models, configure CPU/CUDA, and supply required access. Then
-capture a structure and queue a job. Cached models work offline. Existing Python
-environments and compatible local checkpoints remain available under **Advanced
-setup**. Public MACE-ANI-CC and AIMNet2 have real Windows CPU/CUDA checks and
-historical Linux CPU checks. UMA and MACE-OFF23 weight validation remain pending
-access/licence approval. Follow the [MLIP guide](docs/MLIP.md) for job settings,
-constraints, continuation and platform limits.
+| Studio | Paton-inspired |
+| --- | --- |
+| ![Caffeine in the Studio preset](docs/assets/screenshots/style-studio.png) | ![Caffeine with pale carbon and thin black bonds](docs/assets/screenshots/style-paton-inspired.png) |
+| **Soft studio** — ambient shading | **Flat** — unshaded colors and outlines |
+| ![Caffeine in Soft studio](docs/assets/screenshots/style-soft-studio.png) | ![Caffeine in Flat](docs/assets/screenshots/style-flat.png) |
+| **Tube** — thick, element-colored sticks | **Ball and tube** — rounded atoms and colored bonds |
+| ![Caffeine in Tube](docs/assets/screenshots/style-tube.png) | ![Caffeine in Ball and tube](docs/assets/screenshots/style-ball-and-tube.png) |
+| **Wire** — thin, element-colored sticks | **vdW** — space-filling spheres |
+| ![Caffeine in Wire](docs/assets/screenshots/style-wire.png) | ![Caffeine in vdW](docs/assets/screenshots/style-vdw.png) |
 
-Saved ASE/Sella trajectories and geomeTRIC optimization XYZ can also be opened
-without running a model. Energies are converted to Hartree for the existing
-views; plain XYZ requires an explicit energy unit. Atom identities/order must
-match across frames. Periodic files display stored Cartesian coordinates; local
-MLIP workflows reject periodic inputs. Missing orbitals, electronic spectra,
-IR intensities and Raman activities remain unavailable.
+| Ray tracing | Optional contact lines and vdW overlay |
+| --- | --- |
+| ![Caffeine exported with physical ray-traced lighting](docs/assets/screenshots/ray-traced.png) | ![Illustrative water dimer with a teal contact and translucent van der Waals spheres](docs/assets/screenshots/contact-addons.png) |
+| In **Figure**, set **Renderer → Ray traced · physical lighting**. This example uses 64 samples. More samples reduce noise and take longer. Ray tracing requires WebGL 2. | Under **Figure → Figure add-ons**, enable **Automatic NCI contact lines** and/or **Translucent van der Waals spheres**, then click **Fit view**. This water dimer is an illustrative geometry. |
 
-Save builder work with **Export MOL** before closing; drafts are not saved
-automatically. MOL preserves bond orders; XYZ does not. Generated coordinates
-and **Tidy geometry** provide approximate geometry and should be reviewed
-before use in calculations. Studio MOL files preserve dative direction and TS
-annotations; TS uses a query bond plus a Studio-specific record that other
-editors may not preserve. XYZ/PDB do not preserve these annotations. TS
-contacts must be removed before conversion to a 2D chemical structure.
-Calculation-view bond edits persist while that calculation is open. To retain
-them between sessions, use **Build → Edit geometry → Export MOL** and reopen
-that MOL file. Original calculation and XYZ files are not modified.
+Contact lines are suggestions based on distances and angles: teal for hydrogen
+bonds, purple for halogen contacts, and gray for other close contacts. Keep
+hydrogens visible for hydrogen-bond lines. They do not calculate interaction
+energies or electron-density NCI surfaces; those surfaces require precomputed
+cube fields. See the [rendering details and limitations](docs/USAGE.md#usage).
 
-**View → Shared 3D appearance** includes five xyzrender-inspired presets: Flat,
-Tube, Ball and tube, Wire, and vdW. These adapt the
-[xyzrender styles](https://xyzrender.readthedocs.io/en/latest/configuration.html)
-to Alder's interactive 3D renderer. You can still adjust the representation,
-outlines, projection, and atom size after selecting a preset.
+## More help
 
-Under **Figure → Figure add-ons**, enable **Automatic NCI contact lines** or
-**Translucent van der Waals spheres** (5–60% opacity). Both are included in
-Studio and ray-traced images and update with trajectory/movie frames. Add-ons
-do not change bonds, exported molecular structures, or calculation coordinates.
-Use **Fit** after enabling spheres if they extend beyond the current framing.
-
-Contact lines are geometry-based suggestions: teal for explicit hydrogen bonds
-(N/O/S–H···N/O/S/F, angle at least 120°, H···acceptor ≤2.7 Å and donor···acceptor
-≤3.6 Å), purple for Cl/Br/I halogen contacts (angle at least 150°), and gray for
-other short heavy-atom contacts within 95% of the sum of vdW radii. All pairs
-must be between 55% and 100% of that radius sum; directly bonded, 1–3, and 1–4
-neighbors are excluded. Enable hydrogens to display H-bond lines. Supported
-radii are H, C, N, O, F, P, S, Cl, Br, and I; other elements are skipped by these
-add-ons. This is a distance/angle heuristic, not a full interaction assignment:
-it does not perceive aromatic centroids, classify π-stacking, or calculate
-interaction energies. For density-based NCI surfaces, continue using the cube
-field controls.
-
-Ray tracing requires WebGL 2 and uses physical lighting in place of preview
-outlines and screen-space ambient occlusion. Higher sample counts reduce noise
-and take longer. Video exports retain the camera and molecular appearance,
-have opaque backgrounds, and omit static cube fields. Mode amplitudes are
-illustrative, including imaginary TS modes; trajectories include every geometry
-without interpolating uncalculated structures.
-
-UV–Vis uses the last reported transitions and electric-dipole absorption
-strengths when available. Broadening widths are in eV; the curve is a calculated
-spectrum, not experimental absorbance. The geometry energy profile displays
-SCF/DFT reference energies, including for excited-state jobs. MP/CC total
-energies appear in the calculation summary when reported.
-**IRC / Scans** shows reported path points; missing grid points stay blank.
-For ORCA IRC geometry playback, keep `_IRC_Full_trj.xyz` beside its output,
-or use **Attach IRC trajectory**. Geometry links require matching atoms and
-frame counts; printed trajectory energies are checked when present.
+- [Detailed installation](docs/INSTALLATION.md): Conda, source ZIP, Git, CPU/GPU setup, repairs, and troubleshooting.
+- [Using Alder](docs/USAGE.md): supported files, measurements, comparisons, surfaces, figure exports, and scientific limitations.
+- [Local calculations](docs/MLIP.md) and [tested model/platform compatibility](docs/MLIP_ACCEPTANCE.md).
+- [Capabilities](ALDER_CAPABILITIES.md) and [example files with source attribution](tests/data/README.md).
 
 ## Development
 
@@ -419,10 +266,14 @@ alder
 Run the Python tests with `python -m pytest -q`. Run
 `python -m pytest tests/test_mlip_engine.py -q` in a compatible calculation
 environment for the additional Sella checks. Real-checkpoint and packaged-app
-commands are in the [acceptance guide](docs/MLIP_ACCEPTANCE.md). Desktop integration tests in
-`tests/*_smoke.py` require a graphical session.
+commands are in the [acceptance guide](docs/MLIP_ACCEPTANCE.md). Desktop integration
+tests in `tests/*_smoke.py` require a graphical session.
 
-Bundled renderer and editor assets are included in the repository. Editing
-them requires Node.js; see [web development instructions](web/README.md).
-Use the platform guides above to build standalone releases. Test-data
-provenance and licenses are documented in [tests/data](tests/data/README.md).
+Bundled renderer and editor assets are included. Editing them requires Node.js;
+see [web development](web/README.md). Standalone release instructions are in the
+[Windows](packaging/WINDOWS.md) and [macOS](packaging/MACOS.md) packaging guides.
+
+To regenerate the screenshots and figures, run `python scripts/capture_readme.py`
+from an installed source checkout in a graphical desktop session. Captures use
+the real app, attributed fixtures in `tests/data`, and illustrative molecular
+geometries; they do not download or run ML models.
